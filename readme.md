@@ -3,7 +3,7 @@
 Progressive Web App para acompanhar tempo de estudo (pomodoro e cronômetro livre), com estatísticas
 detalhadas e salas de estudo em grupo com amigos e família em tempo real.
 
-**[Ver demo ao vivo →](https://SEU-SITE.pages.dev)** _(troque pelo seu link depois do deploy)_
+**[Ver demo ao vivo →](https://juntosapp.pages.dev)** _(troque pelo seu link depois do deploy)_
 
 ---
 
