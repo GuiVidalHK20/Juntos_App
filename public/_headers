@@ -1,0 +1,101 @@
+# Arquivo da Cloudflare Pages (lido automaticamente, sem precisar configurar nada no
+# painel, desde que fique na raiz da pasta publicada — por isso ele mora dentro de
+# public/ e não na raiz do repositório, veja "por que public/" no LEIA-ME.md) —
+# cabeçalhos de segurança HTTP aplicados a todas as páginas do site publicado.
+#
+# ⚠️ IMPORTANTE — TESTE O LOGIN DEPOIS DE PUBLICAR ESTA MUDANÇA.
+# A regra Content-Security-Policy abaixo restringe de onde o app pode carregar script,
+# imagem e se conectar — inclusive pro fluxo de login com o Google. Ela foi montada com
+# cuidado pra cobrir os domínios que o Firebase/Google Sign-In realmente usam, mas CSP é
+# a única mudança deste arquivo com chance real de quebrar alguma coisa (as outras
+# regras abaixo são só reforço, sem risco). Se depois de publicar o login parar de
+# funcionar: apague ou renomeie este arquivo _headers, publique de novo (o site volta ao
+# normal na hora, igual a qualquer novo deploy na Cloudflare Pages) e avise quem mantém
+# o código.
+#
+# Por que cada regra existe:
+# - Content-Security-Policy: trava de onde o navegador pode carregar/executar script,
+#   pra dificultar um ataque de XSS conseguir rodar código de fora mesmo que consiga
+#   injetar alguma coisa na página. script-src só libera o próprio site, o CDN oficial
+#   do Firebase (gstatic.com) e o único bloco de script embutido no index.html (pelo
+#   hash exato dele — se esse bloco for editado, o hash muda e precisa recalcular, veja
+#   GUIA-DO-CODIGO.md). style-src precisa de 'unsafe-inline' porque o app usa CSS
+#   embutido em atributos style="" em várias partes do index.html (arquitetura sem
+#   build step, ver CLAUDE.md) — é uma concessão consciente: bem mais fraco contra XSS
+#   via CSS do que via JS, mas não dá pra travar sem reescrever todo o HTML.
+# - X-Content-Type-Options: impede o navegador de "adivinhar" o tipo de um arquivo
+#   diferente do que o servidor informou (evita um dos truques mais comuns de disfarçar
+#   um arquivo malicioso de outro tipo).
+# - Referrer-Policy: não vaza a URL completa (que pode ter dados da sessão) quando o
+#   navegador segue um link pra fora do site.
+# - Permissions-Policy: desliga câmera/microfone/geolocalização — o app não usa nenhum
+#   dos três, então nem faz sentido deixar essas permissões disponíveis.
+# - frame-ancestors 'none': impede que outro site coloque o "Juntos" dentro de um
+#   <iframe> escondido (ataque de clickjacking — clicar em algo pensando que é outro
+#   site, mas na real é o seu, tipo enganar alguém a clicar em "sair da sala" ou "apagar
+#   conta" sem perceber).
+# - Strict-Transport-Security: depois da primeira visita o navegador passa a recusar abrir o site por
+#   HTTP puro (impede ataque de "downgrade" em Wi-Fi público).
+# - Cross-Origin-Opener-Policy "same-origin-allow-popups": isola a janela do app de outras janelas,
+#   mas AINDA deixa o popup de login do Google falar com ela ("same-origin" puro quebraria o login).
+# - X-Frame-Options: mesmo efeito do frame-ancestors, para navegadores antigos.
+# - Cache-Control: o service worker e as páginas HTML nunca ficam presos em cache do navegador/CDN,
+#   senão uma correção de segurança publicada demoraria a chegar em quem já usa o app.
+# - script-src ganhou https://apis.google.com: o SDK do Firebase Authentication carrega dali o
+#   componente do popup de login (é o que a documentação do Firebase pede para quem usa CSP).
+#   Se, ao testar, o login funcionar SEM esse domínio, pode tirá-lo (superfície menor).
+# - img-src ganhou blob: (a prévia da imagem do "Resumo mensal" é um blob) e worker-src 'self'
+#   deixa explícito que só o próprio sw.js pode ser service worker.
+# - connect-src ganhou https://www.gstatic.com (2.13): o service worker (sw.js) baixa e guarda o código
+#   do Firebase (SDK) para o app abrir offline; sem isso a CSP bloquearia esse download.
+# - upgrade-insecure-requests: qualquer link http:// vira https:// sozinho.
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+  Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=(), serial=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://www.gstatic.com https://apis.google.com 'sha256-2KfcmymCRlTlL9elQoaxCDM3uv/+9+byPy25EfRPQ0E='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://*.googleusercontent.com; font-src 'self'; connect-src 'self' https://www.gstatic.com https://*.googleapis.com https://*.google.com https://*.firebaseapp.com; frame-src https://*.firebaseapp.com https://accounts.google.com; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; manifest-src 'self'; upgrade-insecure-requests
+
+# 2.25 — App Check (OPCIONAL, desligado por padrão; veja leia-me.md → "App Check"). Se for ligar, troque a linha
+# Content-Security-Policy acima por ela mesma com ESTAS duas mudanças (e só elas):
+#   script-src  ganha:  https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/
+#   frame-src   ganha:  https://www.google.com/recaptcha/ https://recaptcha.google.com
+# Mantidas fora por padrão para não ampliar a superfície de scripts de quem não usa App Check.
+
+# 2.26 — lembrete com o app fechado (OPCIONAL; worker-push/LEIA-ME.md). Se for ligar, na linha Content-Security-Policy
+# acima, em connect-src, acrescente EXATAMENTE o endereço do seu Worker (sem curinga), por exemplo:
+#   connect-src ... https://juntos-push.SEU-USUARIO.workers.dev
+# Sem isso o navegador bloqueia o cadastro (o app mostra "Não consegui ligar agora").
+
+/sw.js
+  Cache-Control: no-cache
+
+# 2.20.1 — o app é servido pelo service worker (uma geração atômica); estes cabeçalhos garantem que, quando o
+# navegador/CDN for à rede (instalação de versão nova, primeira visita, atualização forçada), nunca receba
+# uma cópia velha guardada pelo próprio navegador.
+/main.js
+  Cache-Control: no-cache
+
+/js/*
+  Cache-Control: no-cache
+
+/firebase-config.js
+  Cache-Control: no-cache
+
+/manifest.json
+  Cache-Control: no-cache
+
+/index.html
+  Cache-Control: no-cache
+
+/
+  Cache-Control: no-cache
+
+/privacidade.html
+  Cache-Control: no-cache
+
+/termos.html
+  Cache-Control: no-cache

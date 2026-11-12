@@ -1,0 +1,263 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
+
+    // Sala ativa de quem está pedindo. "roomCode" fica em users/{uid}/private/mind (os códigos de
+    // sala são segredo: no perfil público, um colega leria o código das suas OUTRAS salas) e é um
+    // campo que a própria pessoa escreve como quiser, então ele NUNCA é aceito sozinho: a regra confere
+    // na lista oficial de membros da sala (rooms/{code}.members, que só muda por entrar/sair
+    // da própria pessoa ou remoção pelo dono) se as DUAS pessoas estão de fato lá.
+    function roomMembers(code) {
+      return get(/databases/$(database)/documents/rooms/$(code)).data.members;
+    }
+    function sharesMyActiveRoom(otherUid) {
+      let myCode = get(/databases/$(database)/documents/users/$(request.auth.uid)/private/mind).data.roomCode;
+      return myCode is string
+        && request.auth.uid in roomMembers(myCode)
+        && otherUid in roomMembers(myCode);
+    }
+
+    // Validação do perfil público: impede lixo/ataque nos campos que OUTRAS pessoas renderizam
+    function validProfile(d) {
+      return d.keys().size() <= 80
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 120
+        && (!('color' in d) || (d.color is string && d.color.matches('^#[0-9A-Fa-f]{6}$')))
+        && (!('photo' in d) || d.photo == null
+            || (d.photo is string && d.photo.size() <= 600 && d.photo.matches('^https://.*')))
+        && (!('diarySharedWith' in d) || (d.diarySharedWith is list && d.diarySharedWith.size() <= 100))
+        && (!('planningSharedWith' in d) || (d.planningSharedWith is list && d.planningSharedWith.size() <= 100))
+        && (!('tadaSharedWith' in d) || (d.tadaSharedWith is list && d.tadaSharedWith.size() <= 100))
+        && (!('gratSharedWith' in d) || (d.gratSharedWith is list && d.gratSharedWith.size() <= 100))
+        && (!('subjects' in d) || (d.subjects is list && d.subjects.size() <= 100))
+        && (!('quickMsgs' in d) || (d.quickMsgs is list && d.quickMsgs.size() <= 20))
+        && (!('daily' in d) || d.daily is map)
+        && (!('cfg' in d) || d.cfg is map);
+    }
+
+    // Validação de um ciclo do diário (users/{uid}/sessions). Só confere o TIPO e o TAMANHO de cada campo
+    // que estiver presente — de propósito sem "só estes campos", para não travar ciclos gravados por
+    // versões antigas do app. Serve também para o "Importar dados": um arquivo adulterado não consegue
+    // gravar textos gigantes nem valores absurdos.
+    function validSession(d) {
+      return d.keys().size() <= 14
+        && (!('minutes' in d) || (d.minutes is number && d.minutes >= 0 && d.minutes <= 1440))
+        && (!('date' in d) || (d.date is string && d.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')))
+        && (!('note' in d) || d.note == null || (d.note is string && d.note.size() <= 2000))
+        && (!('subjectId' in d) || (d.subjectId is string && d.subjectId.size() <= 64))
+        && (!('subjectName' in d) || (d.subjectName is string && d.subjectName.size() <= 200))
+        && (!('subjectColor' in d) || (d.subjectColor is string && d.subjectColor.size() <= 16));
+    }
+
+    // Ta-da (2.20): um documento por dia. Só confere tipo e tamanho; os limites batem com js/tada-data.js.
+    function validTadaDay(d) {
+      return d.keys().size() <= 6
+        && (d.date is string && d.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'))
+        && (!('items' in d) || (d.items is list && d.items.size() <= 60))
+        && (!('wrap' in d) || (d.wrap is string && d.wrap.size() <= 240));
+    }
+    function validGratDay(d) {
+      return d.keys().size() <= 6
+        && (d.date is string && d.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'))
+        && (!('items' in d) || (d.items is list && d.items.size() <= 30));
+    }
+
+    // Estatísticas do Ta-da (2.21): um documento por MÊS com o resumo numérico de cada dia. Só o dono lê e escreve;
+    // nenhum amigo vê (mesmo os que têm a done-list liberada). Os números vêm de js/tada-data.js → summarizeDay.
+    function validTadaStats(d) {
+      return d.keys().size() <= 5
+        && (d.month is string && d.month.matches('^[0-9]{4}-[0-9]{2}$'))
+        && (!('days' in d) || (d.days is map && d.days.keys().size() <= 31))
+        && (!('full' in d) || d.full is bool);
+    }
+
+    // Perguntas para lembrar (2.17): só o dono. Texto de até 300 caracteres e campos conhecidos.
+    function validCard(d) {
+      return d.keys().size() <= 10
+        && (d.q is string && d.q.size() >= 1 && d.q.size() <= 300)
+        && (d.a is string && d.a.size() <= 300)
+        && (d.level is int && d.level >= 0 && d.level <= 10)
+        && (d.next is string && d.next.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$'))
+        && (!('subjectId' in d) || (d.subjectId is string && d.subjectId.size() <= 64))
+        && (!('subjectName' in d) || (d.subjectName is string && d.subjectName.size() <= 200))
+        && (!('subjectColor' in d) || (d.subjectColor is string && d.subjectColor.size() <= 16));
+    }
+
+    // Perfil: o dono lê e escreve o seu. Outra pessoa só lê um perfil específico (nunca lista)
+    // se as duas estiverem MESMO na sala ativa de quem lê.
+    // IMPORTANTE: o perfil inteiro é visível a quem passa nessa regra — por isso anotações,
+    // tarefas e metas NÃO ficam aqui, e sim em users/{uid}/private/* (regras mais abaixo).
+    match /users/{userId} {
+      allow get: if isOwner(userId) || (isSignedIn() && sharesMyActiveRoom(userId));
+      allow list: if false;
+      allow create, update: if isOwner(userId) && validProfile(request.resource.data);
+      allow delete: if isOwner(userId);
+
+      // Diário de estudos: só o dono escreve. Lê o dono e quem ele liberou em
+      // "diarySharedWith" — desde que ainda esteja na mesma sala.
+      match /sessions/{sessionId} {
+        allow read: if isOwner(userId)
+          || (isSignedIn()
+              && request.auth.uid in get(/databases/$(database)/documents/users/$(userId)).data.diarySharedWith
+              && sharesMyActiveRoom(userId));
+        allow create, update: if isOwner(userId) && validSession(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+
+      // Done-list (Ta-da): o dono escreve; lê o dono e quem ele liberou em "tadaSharedWith" (ainda na mesma sala).
+      match /tada/{dayKey} {
+        allow read: if isOwner(userId)
+          || (isSignedIn()
+              && request.auth.uid in get(/databases/$(database)/documents/users/$(userId)).data.tadaSharedWith
+              && sharesMyActiveRoom(userId));
+        allow create, update: if isOwner(userId) && dayKey.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') && validTadaDay(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+
+      // Diário de gratidão: liberação PRÓPRIA ("gratSharedWith"), separada da done-list.
+      match /gratitude/{dayKey} {
+        allow read: if isOwner(userId)
+          || (isSignedIn()
+              && request.auth.uid in get(/databases/$(database)/documents/users/$(userId)).data.gratSharedWith
+              && sharesMyActiveRoom(userId));
+        allow create, update: if isOwner(userId) && dayKey.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') && validGratDay(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+
+      match /tadaStats/{month} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && month.matches('^[0-9]{4}-[0-9]{2}$') && validTadaStats(request.resource.data)
+          && request.resource.data.month == month;
+        allow delete: if isOwner(userId);
+      }
+
+      match /cards/{cardId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validCard(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+
+      // Dados privados. "mind" (anotações de distração, metas, revisões): só o dono.
+      // "planner" (LEGADO: tarefas da antiga aba Planejar, que não existe mais): agora SÓ o dono lê, para
+      // exportar/importar. Antes, quem estava em "planningSharedWith" também lia — esse acesso foi encerrado.
+      match /private/{name} {
+        allow read: if isOwner(userId);
+        // 2.15: só os campos que o app realmente grava em cada documento (PRIVATE_FIELDS em js/firebase.js).
+        // Campo novo? Acrescente aqui também.
+        allow write: if isOwner(userId)
+          && ((name == 'mind' && request.resource.data.keys().hasOnly(['distractions', 'subjectGoals', 'reviewSchedule', 'roomCode', 'roomCodes']))
+              || (name == 'planner' && request.resource.data.keys().hasOnly(['plannedTasks', 'taskCategories', 'dayTemplates'])))
+          && (!('roomCode' in request.resource.data) || request.resource.data.roomCode == null
+              || (request.resource.data.roomCode is string && request.resource.data.roomCode.size() <= 12))
+          && (!('roomCodes' in request.resource.data) || (request.resource.data.roomCodes is list && request.resource.data.roomCodes.size() <= 30));
+      }
+    }
+
+    // Papel de parede: documento separado e PRIVADO — só o dono lê/escreve.
+    match /wallpapers/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId)
+        && (!('image' in request.resource.data) || (request.resource.data.image is string && request.resource.data.image.size() < 900000));
+    }
+
+    // Salas
+    match /rooms/{code} {
+      // "get": só dá pra ler uma sala sabendo o código exato (é assim que se entra numa sala).
+      // "list" bloqueado: ninguém varre todas as salas.
+      allow get: if isSignedIn();
+      allow list: if false;
+
+      allow create: if isSignedIn()
+                    && code.matches('^[A-Za-z0-9]{6,12}$')
+                    && request.resource.data.keys().hasOnly(['members', 'owner', 'createdAt'])
+                    && request.resource.data.createdAt == request.time
+                    && request.resource.data.owner == request.auth.uid
+                    && request.resource.data.members == [request.auth.uid];
+
+      // Entrar: só posso adicionar o MEU uid, sem tirar ninguém, sem trocar o dono e com limite
+      // de 30 pessoas por sala.
+      allow update: if isSignedIn()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members'])
+                    && !(request.auth.uid in resource.data.members)
+                    && request.auth.uid in request.resource.data.members
+                    && request.resource.data.members.hasAll(resource.data.members)
+                    && request.resource.data.members.size() == resource.data.members.size() + 1
+                    && request.resource.data.members.size() <= 30;
+
+      // Sair: só posso remover o MEU uid.
+      allow update: if isSignedIn()
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members'])
+                    && request.auth.uid in resource.data.members
+                    && !(request.auth.uid in request.resource.data.members)
+                    && resource.data.members.hasAll(request.resource.data.members)
+                    && request.resource.data.members.size() == resource.data.members.size() - 1;
+
+      // Remover alguém: só quem criou a sala, uma pessoa por vez, nunca a si mesmo por aqui.
+      allow update: if isSignedIn()
+                    && request.auth.uid == resource.data.owner
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members'])
+                    && request.auth.uid in request.resource.data.members
+                    && resource.data.members.hasAll(request.resource.data.members)
+                    && request.resource.data.members.size() == resource.data.members.size() - 1;
+
+      // Sessão coletiva: só quem criou a sala inicia/encerra (antes qualquer membro podia).
+      allow update: if isSignedIn()
+                    && request.auth.uid == resource.data.owner
+                    && request.auth.uid in resource.data.members
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['sync'])
+                    && request.resource.data.sync is map
+                    && request.resource.data.sync.keys().size() <= 10;
+
+      allow delete: if false;
+
+      // Mensagens públicas da sala. Só MEMBROS leem e escrevem, sempre em nome de si mesmos.
+      // Mensagem nova não pode ter destinatário (mensagem direta vai para "inbox", abaixo) e a
+      // data tem de ser a do servidor. (Mensagens diretas ANTIGAS ainda estão nesta coleção,
+      // lidas por membros — veja o aviso no LEIA-ME sobre limpá-las.)
+      match /messages/{msgId} {
+        allow read: if isSignedIn() && request.auth.uid in roomMembers(code);
+        allow create: if isSignedIn()
+                      && request.auth.uid in roomMembers(code)
+                      && request.resource.data.keys().hasOnly(['from', 'text', 'ts'])
+                      && request.resource.data.from == request.auth.uid
+                      && request.resource.data.ts == request.time
+                      && request.resource.data.text is string
+                      && request.resource.data.text.size() > 0
+                      && request.resource.data.text.size() <= 2000;
+        allow update: if false;
+        allow delete: if isSignedIn() && resource.data.from == request.auth.uid && request.auth.uid in roomMembers(code);
+      }
+
+      // Mensagens diretas: cada pessoa tem a sua caixa de entrada (inbox/{uid}/msgs). Quem envia
+      // grava uma cópia na caixa do destinatário e outra na própria. SÓ o dono da caixa lê.
+      match /inbox/{ownerUid}/msgs/{msgId} {
+        allow read: if isOwner(ownerUid) && request.auth.uid in roomMembers(code);
+        allow create: if isSignedIn()
+                      && request.auth.uid in roomMembers(code)
+                      && ownerUid in roomMembers(code)
+                      && request.resource.data.keys().hasOnly(['from', 'to', 'text', 'ts'])
+                      && request.resource.data.from == request.auth.uid
+                      && request.resource.data.to in roomMembers(code)
+                      && (ownerUid == request.auth.uid || ownerUid == request.resource.data.to)
+                      && request.resource.data.ts == request.time
+                      && request.resource.data.text is string
+                      && request.resource.data.text.size() > 0
+                      && request.resource.data.text.size() <= 2000;
+        allow update: if false;
+        allow delete: if isOwner(ownerUid);
+      }
+    }
+
+    // COMO CONFERIR (Console do Firebase → Firestore → Regras → "Simulador de regras"): entre com o
+    // uid da pessoa A e tente LER users/{uid da pessoa B}, users/{B}/private/mind, users/{B}/sessions/x,
+    // wallpapers/{B} e rooms/{código}/inbox/{B}/msgs/x — todas devem ser NEGADAS, a menos que A e B
+    // estejam na sala ativa de A (e, para sessions/tada/gratitude, B tenha liberado A). "list" de users, rooms e
+    // qualquer coleção é sempre negado: ninguém consegue varrer dados de terceiros.
+    // Todo o resto: bloqueado.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

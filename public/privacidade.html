@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Política de Privacidade — Juntos</title>
+<meta name="theme-color" content="#E9F2FC" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#0F1724" media="(prefers-color-scheme: dark)" />
+<meta name="referrer" content="no-referrer" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<style>
+  :root{
+    --bg:#E9F2FC; --panel:#FFFFFF; --border:#D6E4F5; --text:#16283B; --muted:#5D6F84;
+    --accent:#C15034;
+    --head:'Iowan Old Style','Palatino Linotype',Georgia,'Times New Roman',serif;
+    --body:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--body);line-height:1.6;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+  main{max-width:680px;margin:0 auto;padding:32px 20px 80px}
+  a{color:var(--accent)}
+  a:focus-visible, button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+  .back{display:inline-block;margin-bottom:20px;font-size:13px;color:var(--muted);text-decoration:none}
+  .back:focus-visible{outline:3px solid var(--accent);outline-offset:3px;border-radius:4px}
+  h1{font-family:var(--head);font-weight:400;font-size:28px;margin:0 0 6px}
+  .updated{color:var(--muted);font-size:13px;margin:0 0 32px}
+  h2{font-family:var(--head);font-weight:400;font-size:19px;margin:36px 0 10px}
+  h3{font-size:14.5px;margin:20px 0 6px}
+  p,li{font-size:14.5px}
+  ul{padding-left:20px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin:14px 0}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;margin:12px 0}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:12.5px}
+  .fill{background:#FFF3CD;color:#6B5300;padding:1px 6px;border-radius:4px;font-weight:600}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  .skipLink{position:fixed;left:12px;top:-60px;z-index:50;background:#16283B;color:#fff;padding:10px 16px;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none}
+  .skipLink:focus{top:calc(env(safe-area-inset-top) + 10px);outline:3px solid var(--accent);outline-offset:2px}
+  main:focus{outline:none}
+  .toc{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 18px;margin:0 0 8px}
+  .tocTitle{margin:0 0 6px;font-weight:700;font-size:13px;color:var(--muted)}
+  .toc ol{margin:0;padding-left:20px;columns:1}
+  .toc li{font-size:13.5px;margin:2px 0}
+  h2{scroll-margin-top:16px}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto} *{animation:none !important;transition:none !important} }
+  @media (prefers-color-scheme:dark){
+    :root{ --bg:#0F1724; --panel:#172234; --border:#2A3A52; --text:#E8EEF7; --muted:#A9B8CC; --accent:#FF9A7A }
+    .fill{background:#4A3B00;color:#FFE9A6}
+  }
+  @media (min-width:700px){ .toc ol{columns:2;column-gap:28px} }
+</style>
+</head>
+<body>
+<a class="skipLink" href="#conteudo">Pular para o conteúdo</a>
+<main id="conteudo" tabindex="-1">
+  <nav aria-label="Navegação"><a class="back" href="index.html">‹ voltar para o Juntos</a></nav>
+  <header>
+  <h1>Política de Privacidade</h1>
+  <p class="updated">Versão 1.2 — última atualização: 5 de novembro de 2026.</p>
+  </header>
+  <nav class="toc" aria-label="Neste documento">
+    <p class="tocTitle">Neste documento</p>
+    <ol>
+      <li><a href="#s1">Quem é responsável pelos seus dados</a></li>
+      <li><a href="#s2">Quais dados coletamos — e por quê</a></li>
+      <li><a href="#s3">Base legal (LGPD, art. 7º)</a></li>
+      <li><a href="#s4">Quem vê o quê</a></li>
+      <li><a href="#s5">Com quem seus dados são compartilhados (operadores)</a></li>
+      <li><a href="#s6">Por quanto tempo guardamos seus dados</a></li>
+      <li><a href="#s7">Crianças e adolescentes</a></li>
+      <li><a href="#s8">Seus direitos (LGPD, art. 18)</a></li>
+      <li><a href="#s9">Segurança</a></li>
+      <li><a href="#s10">Cookies e armazenamento no aparelho</a></li>
+      <li><a href="#s11">Mudanças nesta política</a></li>
+    </ol>
+  </nav>
+
+
+  <p>Esta política explica quais dados o app <strong>Juntos</strong> coleta, para que servem, com quem são
+  compartilhados, por quanto tempo ficam guardados e quais são os seus direitos, em linguagem simples,
+  seguindo a Lei Geral de Proteção de Dados (LGPD — Lei 13.709/2018).</p>
+
+  <h2 id="s1">1. Quem é responsável pelos seus dados</h2>
+  <p>O Juntos é operado, como pessoa física, por <strong>Guilherme Vidal</strong> (o "controlador" dos dados, na
+  linguagem da LGPD). Contato para dúvidas, pedidos sobre seus dados e denúncias:
+  <a href="mailto:guigashk2010@gmail.com">guigashk2010@gmail.com</a>. Esse mesmo e-mail é o canal do encarregado de proteção de dados.</p>
+
+  <h2 id="s2">2. Quais dados coletamos — e por quê</h2>
+  <p>Coletamos o que é necessário para o app funcionar. Nenhum dado é vendido, alugado ou usado para
+  publicidade ou para criar perfil de consumo.</p>
+  <table>
+    <tr><th scope="col">Dado</th><th scope="col">De onde vem</th><th scope="col">Para que serve</th></tr>
+    <tr><td>Nome, foto e e-mail da conta Google</td><td>Sua conta Google, ao entrar</td><td>Identificar você no app e na sala (o e-mail aparece só para você, em Ajustes)</td></tr>
+    <tr><td>Cor de perfil, matérias, mensagens rápidas, ajustes do ciclo, preferências</td><td>O que você configura</td><td>Personalizar sua experiência</td></tr>
+    <tr><td>Minutos estudados por dia/matéria/período, sequência de dias, meta e revisões</td><td>Uso do cronômetro</td><td>Estatísticas pessoais e da sala</td></tr>
+    <tr><td>Status ao vivo: "estudando agora", matéria, "em pausa"</td><td>Uso do cronômetro</td><td>Avisar a sua sala. É publicado só enquanto você usa essas funções</td></tr>
+    <tr><td>Diário de estudos (nota de cada ciclo)</td><td>O que você escreve, opcionalmente</td><td>Seu histórico pessoal; só quem você liberar pode ler</td></tr>
+    <tr><td>Anotações de distração ("despejo mental")</td><td>O que você escreve</td><td>Sua organização pessoal. Só você</td></tr>
+    <tr><td>Done-list (o que você fez no dia) e diário de gratidão (Ta-da)</td><td>O que você escreve ou marca</td><td>Seu registro pessoal. Só você, ou quem você liberar (a done-list e a gratidão têm liberações separadas)</td></tr>
+    <tr><td>Estatísticas do Ta-da (por mês)</td><td>Calculadas pelo app a partir dos seus registros: quantas conquistas, gratidões e destaques você teve em cada dia</td><td>Só números, sem texto. Visíveis só para você — nunca compartilhadas</td></tr>
+    <tr><td>Papel de parede (foto)</td><td>Foto que você escolhe</td><td>Personalizar o fundo; privado, só você vê</td></tr>
+    <tr><td>Códigos e membros das salas; mensagens</td><td>Criar/entrar numa sala e conversar</td><td>Estudar em grupo</td></tr>
+    <tr><td>Horário da última atividade</td><td>Automático, a cada ~60s com o app aberto <strong>e só enquanto você está numa sala</strong></td><td>Mostrar quem está online</td></tr>
+    <tr><td>Lembrete com o app fechado (<strong>opcional</strong>): endereço de notificação do seu aparelho, horários e dias do lembrete, fuso horário, “silenciado até” e a data do último envio</td><td>Só se você ligar “Receber mesmo com o app fechado” em Ajustes. É o endereço que o navegador gera para este aparelho; <strong>não leva seu nome, e-mail nem identificador da conta</strong></td><td>Enviar o lembrete na hora marcada. É um identificador do aparelho (dado pessoal pseudonimizado). Desligar, sair da conta ou excluí-la apaga tudo; aparelhos sem uso por 90 dias são esquecidos</td></tr>
+    <tr><td>Registro do seu aceite (versão dos documentos, data, declaração de idade/autorização)</td><td>Tela de aceite</td><td>Comprovar o consentimento e a base legal</td></tr>
+  </table>
+  <p>Não pedimos telefone, endereço, documentos, dados de pagamento nem localização. Atenção: os campos de
+  texto livre (diário, despejo mental, tarefas, mensagens) são seus — evite escrever neles informações
+  sensíveis sobre você ou sobre outras pessoas (saúde, religião, dados de terceiros, nome completo da escola).</p>
+
+  <h2 id="s3">3. Base legal (LGPD, art. 7º)</h2>
+  <ul>
+    <li><strong>Execução do serviço que você pediu</strong> (art. 7º, V): conta, cronômetro, estatísticas,
+      salas e mensagens — sem esses dados o app não funciona.</li>
+    <li><strong>Consentimento</strong> (art. 7º, I): o aceite destes documentos no primeiro acesso e cada
+      compartilhamento opcional (liberar diário, done-list ou gratidão a alguém; notificações). Você pode
+      revogá-lo a qualquer momento (item 8).</li>
+    <li><strong>Legítimo interesse</strong> (art. 7º, IX): segurança do serviço e prevenção de abuso.</li>
+  </ul>
+
+  <h2 id="s4">4. Quem vê o quê</h2>
+  <table>
+    <tr><th scope="col">Informação</th><th scope="col">Quem pode ver</th></tr>
+    <tr><td>Nome, foto, cor, matéria atual, tempo estudado (hoje, semana, mês, ano, últimos 7 dias) e sequência</td><td>Pessoas que estão na <strong>mesma sala ativa</strong> que você</td></tr>
+    <tr><td>Mensagens da sala</td><td>Membros daquela sala</td></tr>
+    <tr><td>Mensagens diretas ("só para…")</td><td>Só você e quem recebeu (regra do banco de dados)</td></tr>
+    <tr><td>Diário de estudos</td><td>Só você, e as pessoas da sala que você liberar</td></tr>
+    <tr><td>Done-list (hoje e dias recentes)</td><td>Só você, e as pessoas da sala que você liberar</td></tr>
+    <tr><td>Diário de gratidão</td><td>Só você, e as pessoas da sala que você liberar (liberação separada)</td></tr>
+    <tr><td>Despejo mental, papel de parede, metas, e-mail</td><td>Só você</td></tr>
+  </table>
+  <p><strong>Sobre a cifragem das mensagens:</strong> o texto é cifrado no seu aparelho (AES-256-GCM) antes de
+  ser salvo, com uma chave derivada do código da sala. Isso impede a leitura casual do banco de dados, mas
+  <em>não é criptografia ponta a ponta</em>: quem conhece o código da sala consegue decifrar, e quem
+  administra o banco de dados, tecnicamente, também poderia. O operador se compromete a não acessar o
+  conteúdo das mensagens, salvo ordem legal ou para apurar denúncia de abuso. Mensagens diretas
+  enviadas <em>antes</em> da versão 2.9 ficam na lista da sala e, no banco de dados, são acessíveis aos
+  membros daquela sala; as novas não.</p>
+
+  <h2 id="s5">5. Com quem seus dados são compartilhados (operadores)</h2>
+  <div class="card">
+    <strong>Google (Firebase Authentication e Cloud Firestore)</strong> — login e banco de dados. Veja a
+    <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer">política de privacidade do Firebase</a>.<br><br>
+    <strong>Cloudflare Pages</strong> — hospedagem dos arquivos do site; registra dados técnicos de acesso
+    (como endereço IP) conforme a
+    <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer">política da Cloudflare</a>.<br><br>
+    <strong>Cloudflare Workers e D1</strong> — só se você ligar o lembrete com o app fechado: guardam o endereço de
+    notificação do aparelho e os horários (tabela acima) e enviam o aviso. O aviso é enviado pelo serviço de
+    notificação do seu navegador (Google, Mozilla, Apple ou Microsoft), que vê o endereço do aparelho, mas não o conteúdo: o
+    aviso não leva texto nem dados seus.
+  </div>
+  <p><strong>Transferência internacional (LGPD, art. 33):</strong> esses provedores podem processar dados em
+  servidores fora do Brasil, inclusive nos Estados Unidos. A transferência é necessária para o serviço
+  funcionar e se apoia nas garantias contratuais e de segurança desses provedores.</p>
+  <p>Não usamos publicidade, analytics de terceiros, rastreadores ou pixels. Podemos divulgar dados se uma
+  autoridade competente exigir, nos termos da lei.</p>
+
+  <h2 id="s6">6. Por quanto tempo guardamos seus dados</h2>
+  <p>Enquanto sua conta existir. Em <strong>Ajustes → Conta → "Excluir minha conta e meus dados"</strong> são
+  apagados: perfil, dados privados, diário, papel de parede, suas mensagens (públicas e diretas) e sua
+  presença nas salas, além da própria conta de login. Cópias de segurança dos provedores podem levar um
+  tempo adicional para expirar. Dados que a lei nos obrigue a guardar serão mantidos só pelo prazo legal.</p>
+
+  <h2 id="s7">7. Crianças e adolescentes</h2>
+  <p>O Juntos pode ser usado por menores, <strong>com conhecimento e autorização de um responsável legal</strong>.
+  No primeiro acesso pedimos essa declaração. Tratamos os dados de crianças e adolescentes no seu melhor
+  interesse (LGPD, art. 14, e Estatuto Digital da Criança e do Adolescente — Lei 15.211/2025). Para
+  crianças, a conta Google deve ser criada e gerida por um responsável (por exemplo, com o Family Link).</p>
+  <ul>
+    <li>Responsáveis podem pedir, a qualquer momento, o acesso, a correção ou a exclusão dos dados do menor, pelo contato do item 1;</li>
+    <li>Nunca usamos dados de menores para publicidade ou perfilamento;</li>
+    <li>Salas só são acessadas por quem tem o código — oriente a criança a não divulgá-lo, a não usar o nome completo, escola ou endereço no perfil, nas matérias ou nas mensagens, e a avisar um adulto se alguém a incomodar;</li>
+    <li>Quem criou a sala pode remover participantes, e qualquer pessoa pode sair a qualquer momento.</li>
+  </ul>
+
+  <h2 id="s8">8. Seus direitos (LGPD, art. 18)</h2>
+  <ul>
+    <li><strong>Acessar e corrigir</strong> seus dados — direto em Ajustes;</li>
+    <li><strong>Baixar uma cópia</strong> (arquivo JSON) — Ajustes → Conta → "Baixar meus dados";</li>
+    <li><strong>Excluir sua conta e seus dados</strong> — Ajustes → Conta → "Excluir minha conta e meus dados";</li>
+    <li><strong>Revogar o consentimento</strong> e <strong>deixar de compartilhar</strong> diário, done-list e gratidão — em Ajustes, quando quiser; revogar o aceite geral significa deixar de usar o app (e excluir a conta, se desejar);</li>
+    <li>Pedir informação sobre o tratamento e o compartilhamento, a anonimização ou a revisão de decisões — pelo contato do item 1 (respondemos em até 15 dias);</li>
+    <li>Reclamar à Autoridade Nacional de Proteção de Dados (ANPD): <a href="https://www.gov.br/anpd" target="_blank" rel="noopener noreferrer">gov.br/anpd</a>.</li>
+  </ul>
+
+  <h2 id="s9">9. Segurança</h2>
+  <p>Os dados trafegam por conexão criptografada (HTTPS) e ficam armazenados com a criptografia padrão do
+  Google Cloud. O acesso é controlado por regras de segurança do banco de dados: cada pessoa lê o próprio
+  perfil e, de quem divide a sala ativa, apenas o que é público na sala; dados privados ficam em áreas
+  separadas. O site usa cabeçalhos de segurança (CSP, HSTS e outros). Ao sair da conta, o app apaga do
+  aparelho a cópia local de perfil, papel de parede e cache offline. Nenhum sistema é 100% imune; se houver
+  incidente que possa causar risco relevante, avisaremos as pessoas afetadas e a ANPD, como manda o art. 48
+  da LGPD. Encontrou uma falha? Escreva para o contato do item 1 antes de divulgar — agradecemos e corrigimos.</p>
+
+  <h2 id="s10">10. Cookies e armazenamento no aparelho</h2>
+  <p>O Juntos não usa cookies de rastreamento nem de publicidade. Guarda no aparelho (localStorage,
+  IndexedDB e cache do navegador): a sessão de login, uma cópia do seu perfil, o estado do cronômetro, o
+  papel de parede, suas escolhas de lembrete, silêncio e alto contraste e o cache offline, para o app abrir rápido e funcionar sem internet. O login com Google
+  pode usar cookies do próprio Google. Tudo isso fica no seu aparelho e é apagado ao usar "Sair da conta".</p>
+
+  <h2 id="s11">11. Mudanças nesta política</h2>
+  <p>Se esta política mudar de forma relevante, a versão e a data no topo serão atualizadas e o app pedirá
+  um novo aceite no próximo acesso.</p>
+</main>
+</body>
+</html>

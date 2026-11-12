@@ -1,0 +1,13 @@
+# firebase-config.js tem as chaves do SEU projeto Firebase — cada pessoa que clona o
+# projeto usa o próprio arquivo (copiado de firebase-config.example.js), sem precisar
+# publicar isso num commit compartilhado. Não são chaves "secretas" no sentido técnico
+# (o navegador de quem usa o app precisa conseguir lê-las de qualquer forma), mas não há
+# motivo pra elas ficarem espalhadas em vários commits do histórico do git também — uma
+# cópia só, no servidor de deploy, já basta. Fica dentro de public/ porque é lá que mora
+# todo o app publicado (veja "por que public/" no LEIA-ME.md).
+public/firebase-config.js
+
+# arquivos comuns de SO/editor que não têm nada a ver com o projeto
+.DS_Store
+Thumbs.db
+*.log

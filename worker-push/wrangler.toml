@@ -1,0 +1,19 @@
+# Worker de lembretes do Juntos — plano GRATUITO da Cloudflare (sem cartão).
+# Passo a passo completo: LEIA-ME.md desta pasta.
+name = "juntos-push"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+[triggers]
+crons = ["* * * * *"]          # a cada minuto (o plano gratuito permite 5 gatilhos por conta)
+
+[[d1_databases]]
+binding = "DB"
+database_name = "juntos-push"
+database_id = "COLE_AQUI_O_ID_QUE_O_WRANGLER_MOSTRAR"
+
+[vars]
+ALLOWED_ORIGIN = "https://SEU-SITE.pages.dev"     # exatamente o endereço do app, sem barra no fim
+VAPID_PUBLIC_KEY = "COLE_AQUI_A_CHAVE_PUBLICA"    # saída de: node scripts/gerar-vapid.mjs
+VAPID_SUBJECT = "mailto:voce@exemplo.com"         # contato do responsável (exigido pelo padrão Web Push)
+# A chave PRIVADA nunca vai neste arquivo:  npx wrangler secret put VAPID_PRIVATE_JWK

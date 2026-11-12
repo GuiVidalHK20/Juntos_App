@@ -1,0 +1,2088 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Juntos — estudar em grupo</title>
+<meta name="theme-color" content="#0A1018" />
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin />
+<link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin />
+<link rel="preconnect" href="https://firestore.googleapis.com" crossorigin />
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js" crossorigin />
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js" crossorigin />
+<link rel="modulepreload" href="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js" crossorigin />
+<link rel="modulepreload" href="./main.js" />
+<link rel="modulepreload" href="./js/store.js" />
+<link rel="modulepreload" href="./js/fx.js" />
+<link rel="modulepreload" href="./js/stats.js" />
+<link rel="modulepreload" href="./js/connectivity.js" />
+<link rel="modulepreload" href="./js/privacy.js" />
+<link rel="modulepreload" href="./js/whatsnew.js" />
+<link rel="modulepreload" href="./js/room.js" />
+<link rel="modulepreload" href="./js/tada.js" />
+<link rel="modulepreload" href="./js/subjects.js" />
+<link rel="modulepreload" href="./js/messages.js" />
+<link rel="modulepreload" href="./js/dayrecap.js" />
+<link rel="modulepreload" href="./js/wallpaper.js" />
+<link rel="modulepreload" href="./js/auth.js" />
+<link rel="modulepreload" href="./js/comfort.js" />
+<link rel="modulepreload" href="./js/timer.js" />
+<link rel="modulepreload" href="./js/a11y.js" />
+<link rel="modulepreload" href="./js/distractions.js" />
+<link rel="modulepreload" href="./js/ui.js" />
+<link rel="modulepreload" href="./js/firebase.js" />
+<link rel="modulepreload" href="./js/constants.js" />
+<link rel="modulepreload" href="./js/utils.js" />
+<link rel="modulepreload" href="./js/consistency.js" />
+<link rel="modulepreload" href="./js/studylog.js" />
+<link rel="modulepreload" href="./js/offlineStore.js" />
+<link rel="modulepreload" href="./js/crypto.js" />
+<link rel="modulepreload" href="./js/breathe.js" />
+<link rel="modulepreload" href="./firebase-config.js" />
+<link rel="modulepreload" href="./js/spaced.js" />
+<link rel="modulepreload" href="./js/ux.js" />
+<link rel="modulepreload" href="./js/ambient.js" />
+<link rel="modulepreload" href="./js/updates.js" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Juntos" />
+<script>
+  // aplica o tema (claro/escuro/sistema) ANTES do CSS pintar a tela, pra
+  // não piscar um tema errado por uma fração de segundo na abertura do app.
+  try {
+    var t = localStorage.getItem("juntos.theme.v1") || "dark";
+    document.documentElement.dataset.theme = t;
+    var pal = localStorage.getItem("juntos.palette.v1"); if (pal) document.documentElement.dataset.palette = pal;
+    var ts = localStorage.getItem("juntos.tscale.v1"); if (ts) document.documentElement.dataset.tscale = ts;
+    var fxm = localStorage.getItem("juntos.fx.v1"); if (fxm === "off") document.documentElement.dataset.motion = "off";
+    // 2.25 — alto contraste: escolha salva ("1"/"0"); sem escolha, segue o pedido do sistema (prefers-contrast)
+    var hc = localStorage.getItem("juntos.hc.v1");
+    if (hc === "1" || (hc === null && window.matchMedia && matchMedia("(prefers-contrast: more)").matches)) document.documentElement.dataset.hc = "on";
+    // 2.17 — visual, tela de foco e ampulheta (mesmos padrões de js/ux.js)
+    var ux = JSON.parse(localStorage.getItem("juntos.ux.v1") || "{}"), de = document.documentElement;
+    if (ux.layout && ux.layout !== "atual") de.dataset.layout = ux.layout;
+    if (ux.focus !== false) de.dataset.focus = "min";
+    if (ux.hourglass === true) de.dataset.hourglass = "on";
+    de.dataset.view = "timer";
+  } catch (e) {}
+</script>
+<style>
+  :root{
+    /* gradiente escuro azul→âmbar, com cartões de vidro fosco por cima */
+    --bg-grad:linear-gradient(160deg,#0A1018 0%,#131C2B 28%,#211B26 58%,#2E2015 82%,#3A2515 100%);
+    --panel:#161C28; --surface:rgba(255,255,255,.07); --surface2:rgba(255,255,255,.045);
+    --border:rgba(255,255,255,.12);
+    --text:#F8FAFF; --muted:#B7C3D6;
+    --c-timer:#2FD9EE; --c-stats:#A78BFA; --c-room:#22D3A6; --c-settings:#F5B93D; --c-tada:#F4608C; --c-quotes:#FF9A4D;
+    --danger:#FF6B5E; --navbg:rgba(10,13,20,.55); --headbg:rgba(10,14,22,.92);
+    --head:'Iowan Old Style','Palatino Linotype',Georgia,'Times New Roman',serif;
+    --body:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    --glow: 0 8px 30px rgba(0,0,0,.35);
+    --ease-fluid: cubic-bezier(.16,1,.3,1);
+  }
+  /* quando há papel de parede, os cartões ficam um pouco mais transparentes
+     pra foto aparecer por baixo */
+  /* Com papel de parede, o contraste manda na FOTO, não no tema claro/escuro: se a foto
+     (já escurecida pelo controle) é escura, o texto é claro sobre vidro escuro; se é clara,
+     o texto é escuro sobre vidro claro. Assim o texto nunca some por causa do modo escolhido. */
+  body.haswall{ --text:#F5F8FC; --muted:#D3DBE8; --border:rgba(255,255,255,.22);
+    --surface:rgba(10,14,22,.78); --surface2:rgba(10,14,22,.70); --panel:#141924;
+    --navbg:rgba(10,14,22,.90); --headbg:rgba(10,14,22,.94); --solid:rgba(14,20,32,.9); --tshadow:0 1px 8px rgba(0,0,0,.65); --glow:0 8px 30px rgba(0,0,0,.5); }
+  body.haswall[data-contrast="light"]{
+    --text:#0E1726; --muted:#2B3A4F; --border:rgba(10,14,20,.28);
+    --surface:rgba(255,255,255,.92); --surface2:rgba(255,255,255,.86); --panel:#FFFFFF;
+    --navbg:rgba(255,255,255,.95); --headbg:rgba(255,255,255,.96); --solid:rgba(255,255,255,.96); --tshadow:0 1px 6px rgba(255,255,255,.7); --glow:0 8px 24px rgba(0,0,0,.2);
+  }
+
+  /* ---------- Modo claro (Ajustes > Aparência) ----------
+     Mesmas cores de destaque (--c-timer/--c-stats/--c-room/--c-settings)
+     nos dois temas, de propósito — só fundo/superfície/texto mudam. */
+  :root[data-theme="light"]{
+    --bg-grad:linear-gradient(160deg,#F7F9FC 0%,#EFF3FA 30%,#F3EEF8 62%,#FBF2E6 100%);
+    --panel:#FFFFFF; --surface:rgba(255,255,255,.74); --surface2:rgba(20,30,52,.06);
+    --border:rgba(24,34,52,.20); --text:#0F1A2B; --muted:#41526A;
+    --navbg:rgba(255,255,255,.80); --headbg:rgba(247,249,252,.94); --glow:0 10px 30px rgba(60,80,150,.16);
+  }
+  @media (prefers-color-scheme:light){
+    :root[data-theme="system"]{
+      --bg-grad:linear-gradient(160deg,#F7F9FC 0%,#EFF3FA 30%,#F3EEF8 62%,#FBF2E6 100%);
+      --panel:#FFFFFF; --surface:rgba(255,255,255,.74); --surface2:rgba(20,30,52,.06);
+      --border:rgba(24,34,52,.20); --text:#0F1A2B; --muted:#41526A;
+      --navbg:rgba(255,255,255,.80); --headbg:rgba(247,249,252,.94); --glow:0 10px 30px rgba(60,80,150,.16);
+    }
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg-grad); background-attachment:fixed; color:var(--text); font-family:var(--body); min-height:100dvh;
+    display:flex; flex-direction:column; padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom);
+    transition:color .2s}
+  #wallpaper{position:fixed; inset:0; z-index:-2; background-size:cover; background-position:center; display:none}
+  #wallShade{position:fixed; inset:0; z-index:-1; background:rgba(10,14,20,.4); display:none}
+  body.haswall #wallpaper, body.haswall #wallShade{display:block}
+
+  /* ---------- legibilidade com papel de parede ----------
+     Botões e abas ganham fundo quase opaco, borda nítida e um brilho que pulsa de leve,
+     pra ficarem destacados mesmo sobre foto. Some com \"reduzir movimento\" do sistema. */
+  body.haswall .time, body.haswall .phase, body.haswall .brandwrap p, body.haswall .brandwrap h1,
+  body.haswall .me, body.haswall #meName, body.haswall .sechead, body.haswall .fineprint, body.haswall .muted{ text-shadow:var(--tshadow) }
+  body.haswall nav{ background:var(--navbg); border-top:1.5px solid var(--border); box-shadow:0 -6px 24px rgba(0,0,0,.25) }
+  body.haswall nav button{ color:var(--text); font-weight:700; text-shadow:var(--tshadow) }
+  body.haswall nav button::before{ filter:drop-shadow(0 1px 3px rgba(0,0,0,.55)) }
+  body.haswall[data-contrast="light"] nav button::before{ filter:drop-shadow(0 1px 2px rgba(255,255,255,.8)) }
+  body.haswall nav button.on{ box-shadow:0 0 0 1px currentColor inset; animation:navGlow 2.8s ease-in-out infinite }
+  body.haswall .ghost, body.haswall .round, body.haswall .microBtn, body.haswall .gearBtn, body.haswall .quotesBtn,
+  body.haswall .chip, body.haswall .btnOutline, body.haswall .backBtn, body.haswall .rowBtn{
+    background:var(--solid); border:1.5px solid var(--border); color:var(--text); font-weight:600; backdrop-filter:blur(14px) }
+  body.haswall .microBtn{ color:var(--text) }
+  body.haswall .primary{ animation:primaryGlow 2.6s ease-in-out infinite }
+  body.haswall .primary.roomtone{ animation-name:primaryGlowRoom }
+  body.haswall .gearBtn.on, body.haswall .quotesBtn.on{ animation:navGlow 2.8s ease-in-out infinite }
+  @keyframes primaryGlow{
+    0%,100%{ box-shadow:0 0 0 1.5px rgba(255,255,255,.55), 0 0 12px 1px rgba(47,217,238,.55) }
+    50%{ box-shadow:0 0 0 1.5px rgba(255,255,255,.9), 0 0 26px 7px rgba(47,217,238,.85) } }
+  @keyframes primaryGlowRoom{
+    0%,100%{ box-shadow:0 0 0 1.5px rgba(255,255,255,.55), 0 0 12px 1px rgba(34,211,166,.55) }
+    50%{ box-shadow:0 0 0 1.5px rgba(255,255,255,.9), 0 0 26px 7px rgba(34,211,166,.85) } }
+  @keyframes navGlow{
+    0%,100%{ box-shadow:0 0 0 1px currentColor inset, 0 0 8px 0 currentColor }
+    50%{ box-shadow:0 0 0 1px currentColor inset, 0 0 18px 2px currentColor } }
+  @media (prefers-reduced-motion: reduce){ body.haswall .primary, body.haswall nav button.on, body.haswall .gearBtn.on, body.haswall .quotesBtn.on{ animation:none } }
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes riseIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes popIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+  @keyframes modalIn{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes wrapIn{from{opacity:0}to{opacity:1}}
+  main section:not(.hide){animation:riseIn .4s var(--ease-fluid)}
+  html{scroll-behavior:smooth}
+  button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;transition:transform .16s var(--ease-fluid),opacity .12s,background .2s,border-color .2s,box-shadow .2s}
+  button:active{transform:scale(.96)}
+  button:hover{opacity:.92}
+  input,select,textarea{font-family:inherit}
+  .hide{display:none !important}
+
+  #splash{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+  #splash h1{font-family:var(--head);font-size:30px;font-weight:400;margin:0}
+  .spinner{width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--c-timer);border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  #login{flex:1;display:flex;align-items:center;justify-content:center;padding:24px}
+  #login .box{max-width:360px;width:100%}
+  .kicker{font-family:var(--head);font-size:12px;color:var(--i-timer);margin:0 0 4px}
+  h1.brand{font-family:var(--head);font-size:34px;margin:0 0 10px;font-weight:400}
+  .lede{color:var(--muted);font-size:14px;line-height:1.6;margin:0 0 32px}
+  .gbtn{width:100%;background:#fff;color:#1f1f1f;border:1px solid var(--border);border-radius:8px;padding:12px;
+        font-size:14px;font-weight:500;display:flex;align-items:center;justify-content:center;gap:10px}
+  .gbtn svg{width:18px;height:18px}
+  .fineprint{color:var(--muted);font-size:11px;line-height:1.6;margin-top:16px}
+
+  /* CORREÇÃO (2.13): o cabeçalho é "grudado" no topo (sticky). Antes o fundo dele era
+     transparente quando não havia papel de parede, então ao rolar a tela o conteúdo (as abas
+     as sub-abas do Ta-da, botões etc.) passava POR BAIXO e aparecia misturado com o
+     título "Juntos", o nome e os botões 💡/⚙️. Agora ele sempre tem um fundo próprio
+     (--headbg), respeita a área segura do celular (entalhe/barra de status) e o texto não
+     quebra em duas linhas por cima do título. */
+  header{padding:calc(14px + env(safe-area-inset-top)) 20px 12px;display:flex;align-items:center;gap:12px;
+         justify-content:space-between;position:sticky;top:0;z-index:30;
+         background:var(--headbg);backdrop-filter:blur(16px) saturate(1.2);-webkit-backdrop-filter:blur(16px) saturate(1.2);
+         border-bottom:1px solid var(--border)}
+  header .brandwrap{flex:0 0 auto;min-width:0}
+  header .brandwrap p{margin:0 0 2px;font-family:var(--head);font-size:11px;color:var(--i-timer);letter-spacing:.4px;white-space:nowrap}
+  header .brandwrap h1{margin:0;font-family:var(--head);font-size:20px;font-weight:400;line-height:1.1}
+  .me{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);min-width:0;flex:0 1 auto}
+  .me #meName{min-width:0;max-width:34vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .me .gearBtn{flex:0 0 auto}
+  .streakBadge{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--i-settings);
+               background:rgba(245,185,61,.14);border:1px solid rgba(245,185,61,.3);padding:4px 10px;border-radius:999px;font-weight:700}
+  .avatarWrap{position:relative;flex:0 0 auto;display:inline-flex}
+  .avatar{border-radius:50%;object-fit:cover;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--text);font-weight:600}
+  .dotBadge{position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border-radius:50%;border:2px solid #fff;background:var(--c-room)}
+  .dotBadge.studying{background:var(--c-timer)}
+  .dotBadge.doingTask{background:var(--c-tada)}
+
+  /* Navegação inferior (5 abas): botões grandes, ícone em cima e rótulo embaixo, fáceis de tocar.
+     Ajustes saiu daqui — virou a engrenagem do cabeçalho (#gearBtn). */
+  nav{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;gap:6px;justify-content:center;
+      padding:8px 10px calc(8px + env(safe-area-inset-bottom));
+      background:var(--navbg);backdrop-filter:blur(16px);border-top:1px solid var(--border);
+      transition:transform .2s var(--ease-fluid)}
+  nav button{flex:1 1 0;min-width:0;max-width:140px;min-height:62px;padding:8px 1px 7px;font-size:10.5px;font-weight:600;letter-spacing:-.2px;
+      color:var(--muted);white-space:nowrap;position:relative;border-radius:16px;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;gap:4px;background:transparent;border:1px solid transparent;
+      overflow:hidden;text-overflow:ellipsis;transition:background .2s,border-color .2s,color .2s,transform .12s}
+  nav button:active{transform:scale(.95)}
+  nav button::before{font-size:24px;line-height:1;transition:transform .25s var(--ease-fluid)}
+  nav button.on::before{transform:scale(1.14) translateY(-1px)}
+  nav button[data-tab="timer"]::before{content:"⏱"}
+  nav button[data-tab="stats"]::before{content:"📊"}
+  nav button[data-tab="tada"]::before{content:"✨"}
+  nav button[data-tab="room"]::before{content:"👥"}
+  nav button.on{color:var(--text)}
+  nav button[data-tab="timer"].on{background:rgba(47,217,238,.16);border-color:rgba(47,217,238,.45)}
+  nav button[data-tab="stats"].on{background:rgba(167,139,250,.16);border-color:rgba(167,139,250,.45)}
+  nav button[data-tab="tada"].on{background:rgba(244,96,140,.16);border-color:rgba(244,96,140,.45)}
+  nav button[data-tab="room"].on{background:rgba(34,211,166,.16);border-color:rgba(34,211,166,.45)}
+  nav button .badge{position:absolute;top:4px;right:calc(50% - 26px);min-width:16px;height:16px;border-radius:999px;background:var(--c-timer);color:#0A1018;font-size:10px;font-weight:700;line-height:16px;text-align:center;padding:0 4px;animation:popIn .25s var(--ease-fluid)}
+  @media(max-width:410px){nav{gap:3px;padding-left:6px;padding-right:6px}nav button{font-size:9.5px;letter-spacing:-.3px}}
+  @media(max-width:370px){nav button{font-size:9px}nav button::before{font-size:22px}}
+  @media(min-width:860px){
+    nav{max-width:640px;left:50%;transform:translateX(-50%);border-radius:22px 22px 0 0;border:1px solid var(--border);border-bottom:none;gap:8px}
+    nav button{max-width:128px;font-size:12.5px}
+  }
+
+  /* engrenagem de Ajustes (cabeçalho) */
+  .gearBtn{width:42px;height:42px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:21px;line-height:1;
+           background:var(--surface);border:1px solid var(--border);color:var(--text);flex:0 0 auto;transition:transform .35s var(--ease-fluid),background .2s,border-color .2s}
+  .gearBtn:active{transform:rotate(60deg) scale(.94)}
+  .gearBtn.on{background:rgba(245,185,61,.16);border-color:rgba(245,185,61,.5)}
+  .quotesBtn.on{background:rgba(255,154,77,.16);border-color:rgba(255,154,77,.5)}
+  .settingsTop{display:flex;align-items:center;gap:12px;margin:0 0 22px}
+  .settingsTop h2{font-family:var(--head);font-size:18px;font-weight:400;margin:0}
+  .backBtn{font-size:13px;color:var(--muted);padding:8px 12px 8px 8px;border-radius:999px;background:var(--surface);border:1px solid var(--border)}
+  /* linha que abre a folha "Som e notificações" */
+  .rowBtn{width:100%;display:flex;align-items:center;gap:12px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;backdrop-filter:blur(10px)}
+  .rowBtn .ic{font-size:22px}
+  .rowBtn .tx{flex:1;min-width:0}
+  .rowBtn .tx b{display:block;font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px}
+  .rowBtn .tx span{font-size:12px;color:var(--muted)}
+  .rowBtn .chev{color:var(--muted);font-size:20px}
+  /* 2.25 — lembrete gentil (Ajustes → Som e notificações) */
+  .remTimes{display:flex;flex-wrap:wrap;gap:8px}
+  .remTime{display:inline-flex;align-items:center;gap:4px}
+  .remTime input{width:auto;min-width:110px}
+  .remDays{display:flex;flex-wrap:wrap;gap:6px}
+  .remDays .chip{min-width:44px;min-height:36px}
+  .remDel{padding:6px 10px}
+  .soundSheetBox{max-width:460px;max-height:86vh;overflow-y:auto}
+  .soundSheetBox .notifBox:first-of-type{margin-top:0}
+
+  main{flex:1;width:100%;max-width:620px;margin:0 auto;padding:24px 20px calc(116px + env(safe-area-inset-bottom))}
+  @media(min-width:860px){main{max-width:720px;padding-left:32px;padding-right:32px}}
+
+  .subjectChips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:22px}
+  .chip{padding:7px 14px;border-radius:999px;font-size:12.5px;display:flex;align-items:center;gap:6px;border:1px solid var(--border);color:var(--muted);background:var(--surface);backdrop-filter:blur(10px)}
+  .chip .dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+  .chip.on{color:var(--text);border-width:1.5px}
+  .chip:disabled{opacity:.6}
+
+  .modes{display:flex;border-radius:999px;overflow:hidden;background:var(--surface);border:1px solid var(--border);margin-bottom:24px}
+  .modes button{flex:1;padding:13px 10px;font-size:13px;font-weight:600;color:var(--muted);border-radius:0;transition:background .25s,color .25s}
+  .modes button.on{background:var(--c-timer);color:#0A1018}
+  .modes button:disabled{opacity:.55}
+  .dial{display:flex;flex-direction:column;align-items:center;padding:8px 0 4px}
+  .phase{font-size:12px;color:var(--muted);margin:0 0 14px;letter-spacing:.3px;text-align:center}
+  .ring{position:relative;width:min(232px,64vw);aspect-ratio:1;display:flex;align-items:center;justify-content:center;margin-bottom:26px}
+  .ring::before{content:"";position:absolute;inset:8%;border-radius:50%;
+    background:radial-gradient(circle,rgba(47,217,238,.18),transparent 70%);filter:blur(6px);z-index:-1}
+  .ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+  .ring circle#progressRing{transition:stroke-dashoffset .3s ease, stroke .3s ease}
+  .ring .time{position:absolute;font-size:clamp(36px,11vw,48px);font-weight:300;font-variant-numeric:tabular-nums;letter-spacing:-1px}
+  .controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center}
+  .primary{background:var(--c-timer);color:#0A1018;border-radius:999px;padding:13px 26px;font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;box-shadow:0 6px 22px rgba(47,217,238,.35)}
+  .primary.roomtone{background:var(--c-room);box-shadow:0 6px 22px rgba(34,211,166,.35)}
+  .ghost{background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:999px;padding:13px 22px;font-size:14px;font-weight:500;backdrop-filter:blur(10px)}
+  .round{width:44px;height:44px;border-radius:50%;background:var(--surface);border:1px solid var(--border);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:15px;backdrop-filter:blur(10px)}
+
+  .microRow{display:flex;justify-content:center;gap:8px;margin-top:20px;flex-wrap:wrap}
+  .microBtn{font-size:12px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:7px 13px;display:flex;align-items:center;gap:6px}
+  .microBtn .cnt{background:var(--c-timer);color:var(--on-fill);border-radius:999px;min-width:16px;height:16px;font-size:10px;line-height:16px;text-align:center;padding:0 4px}
+
+  .dumpBox{margin-top:14px}
+  .dumpRow{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);animation:fadeIn .3s var(--ease-fluid)}
+  .dumpRow.done .dumpText{text-decoration:line-through;color:var(--muted)}
+  .dumpText{flex:1;font-size:13px}
+  .dumpCheck,.dumpX{font-size:14px;color:var(--muted);transition:transform .15s var(--ease-fluid)}
+  .dumpCheck:active,.dumpX:active{transform:scale(1.25)}
+
+  .divider{border-top:1px solid var(--border);margin-top:26px;padding-top:16px}
+  .linkish{font-size:12px;color:var(--muted);text-decoration:underline;text-decoration-style:dotted}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+  label.f{display:block;font-size:11px;color:var(--muted);margin-bottom:5px}
+  input.f,textarea.f{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:10px 12px;font-size:14px;outline:none;transition:border-color .15s}
+  input.f:focus,textarea.f:focus{border-color:var(--c-timer)}
+  .span2{grid-column:span 2}
+  .save{background:var(--c-timer);color:var(--on-fill);border-radius:6px;padding:10px;font-size:14px;font-weight:600;width:100%}
+  .save:disabled{opacity:.4}
+
+  .notifBox{display:flex;align-items:flex-start;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-top:16px;backdrop-filter:blur(10px)}
+  .switch{position:relative;width:38px;height:22px;flex:0 0 auto;margin-top:1px}
+  .switch input{opacity:0;width:0;height:0}
+  .slider{position:absolute;inset:0;background:var(--border);border-radius:999px;transition:.2s}
+  .slider::before{content:"";position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+  .switch input:checked + .slider{background:var(--c-room)}
+  .switch input:checked + .slider::before{transform:translateX(16px)}
+
+  /* ---------- Modo Leitura (tela quase apagada) ---------- */
+  #readOverlay{display:none;position:fixed;inset:0;z-index:80;background:#050608;color:rgba(255,255,255,.35);
+    flex-direction:column;align-items:center;justify-content:center;gap:10px}
+  body.readMode #readOverlay{display:flex}
+  #readOverlay .rc{font-size:15vw;font-variant-numeric:tabular-nums;font-weight:200}
+  #readOverlay p{font-size:12px;letter-spacing:.5px}
+
+  /* ---------- Mini player flutuante (fallback sem PiP nativo) ---------- */
+  .miniPlayerCard{position:fixed;right:16px;bottom:calc(116px + env(safe-area-inset-bottom));z-index:70;
+    background:#11141C;color:#EDEAE1;border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:10px;
+    box-shadow:0 10px 30px rgba(0,0,0,.3)}
+  .miniPlayerCard .mpTime{font-variant-numeric:tabular-nums;font-size:18px;min-width:64px}
+  .miniPlayerCard .mpBtn{background:#FF6A45;color:var(--on-fill);border-radius:999px;padding:6px 12px;font-size:11px}
+  .miniPlayerCard .mpClose{color:#8D93A6;font-size:13px;padding:2px}
+
+  /* ---------- Modal genérico (nota de ciclo, distração) ---------- */
+  .modalWrap{position:fixed;inset:0;z-index:90;background:rgba(10,14,20,.5);display:flex;align-items:flex-end;
+    justify-content:center;padding:16px}
+  @media(min-width:600px){.modalWrap{align-items:center}}
+  .modalWrap{animation:wrapIn .2s ease}
+  .modalBox{background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:20px;max-width:420px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.45);animation:modalIn .3s var(--ease-fluid)}
+  .modalTitle{font-family:var(--head);font-size:16px;margin:0 0 12px}
+  .modalInput{resize:vertical;min-height:70px}
+  .modalBtns{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+  .whatsnewRelease{padding:14px 0;border-bottom:1px solid var(--border)}
+  .whatsnewRelease:last-child{border-bottom:none;padding-bottom:0}
+  .whatsnewVersion{margin:0 0 8px;font-family:var(--head);font-size:14.5px;font-weight:600}
+  .whatsnewNewTag{background:var(--c-settings);color:#231a02;font-size:10.5px;font-weight:700;
+    padding:2px 8px;border-radius:999px;vertical-align:middle;margin-left:2px}
+  .whatsnewList{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:7px}
+  .whatsnewList li{font-size:13.5px;line-height:1.45}
+  #settingsWhatsNewDot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--c-settings);margin-left:6px;vertical-align:middle}
+  /* Resumo do mês (js/wrapped.js): escolher mês e tema, ver a imagem, baixar/compartilhar */
+  .wrBox{max-width:440px;max-height:94dvh;display:flex;flex-direction:column;gap:12px;overflow:auto;padding:16px}
+  .wrHead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .wrHead .modalTitle{margin:0;font-family:var(--head);font-size:19px}
+  .wrX{width:40px;height:40px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:15px}
+  .wrChips,.wrThemes{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:2px 1px 4px;scroll-snap-type:x proximity}
+  .wrChips::-webkit-scrollbar,.wrThemes::-webkit-scrollbar{display:none}
+  .wrChip,.wrTheme{flex:0 0 auto;scroll-snap-align:center;padding:9px 14px;border-radius:999px;background:var(--surface);border:1px solid var(--border);color:var(--muted);font-size:13.5px;font-weight:600;white-space:nowrap}
+  .wrChip.on,.wrTheme.on{color:var(--text);border-color:var(--c-stats);background:color-mix(in srgb,var(--c-stats) 18%,var(--surface))}
+  .wrTheme{display:inline-flex;align-items:center;gap:8px}
+  .wrDot{display:inline-block;width:14px;height:14px;border-radius:50%;border:1px solid rgba(255,255,255,.25)}
+  .wrDot.noite{background:linear-gradient(135deg,#0B0F18,#2FD9EE)}
+  .wrDot.aurora{background:linear-gradient(135deg,#FF9AD0,#8FF5E2)}
+  .wrDot.papel{background:linear-gradient(135deg,#FBF7EE,#E2573B)}
+  .wrPrev{position:relative;display:flex;justify-content:center;min-height:120px}
+  .wrImg{width:auto;max-width:100%;height:auto;max-height:min(52dvh,520px);aspect-ratio:1080/1350;object-fit:contain;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  .wrImg[hidden]{display:none}
+  .wrBusy{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:10px;color:var(--muted);font-size:13.5px;background:color-mix(in srgb,var(--panel) 70%,transparent);border-radius:14px}
+  .wrBusy[hidden]{display:none}
+  .wrBtns{display:flex;gap:10px}
+  .wrBtns button{flex:1 1 0;padding:13px 14px;border-radius:12px;font-size:14.5px}
+  .wrBtns button:disabled{opacity:.55}
+
+  /* ---------- Stats ---------- */
+  .statsSubTabs{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;padding:4px;margin-bottom:22px;background:var(--surface2);border:1px solid var(--border);border-radius:14px}
+  .statsSubTab{min-width:0;padding:9px 2px;border:0;border-radius:10px;background:transparent;color:var(--muted);font-size:clamp(11.5px,3.4vw,13.5px);font-weight:500;white-space:nowrap;text-align:center;transition:background .2s,color .2s}
+  .statsSubTab.on{background:var(--surface);color:var(--text);font-weight:600;box-shadow:0 1px 6px rgba(0,0,0,.22)}
+  .statsSubTab .long{display:none}
+  @media(min-width:520px){.statsSubTab .long{display:inline}}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:26px}
+  @media(min-width:520px){.stats{grid-template-columns:repeat(4,1fr)}}
+  .stat .v{font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;margin:0 0 7px;color:var(--text);
+    display:inline-block;padding-bottom:6px;border-bottom:2px solid var(--c-stats)}
+  .stat .l{font-size:11px;color:var(--muted);margin:0;text-transform:uppercase;letter-spacing:.4px}
+  .streakCard{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px 18px;display:flex;align-items:center;gap:14px;margin-bottom:22px;backdrop-filter:blur(14px);box-shadow:var(--glow)}
+  .streakCard .big{font-size:32px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--i-settings);line-height:1}
+  .streakCard .txt p{margin:0;font-size:13px}
+  .streakCard .txt .sub{color:var(--muted);font-size:12px;margin-top:2px}
+  .wrappedRow{margin-bottom:26px}
+  .wrappedRow button{width:100%;background:linear-gradient(120deg,var(--c-timer),var(--c-stats));color:var(--on-fill);border-radius:10px;padding:13px;font-size:14px;font-weight:600}
+  .sechead{font-family:var(--head);font-size:14px;color:var(--muted);margin:0 0 14px}
+  .bars{display:flex;align-items:flex-end;gap:8px;height:150px}
+  .bars .col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+  .bars .stack{width:100%;display:flex;flex-direction:column-reverse;border-radius:3px 3px 0 0;overflow:hidden;background:var(--surface2)}
+  .bars .seg{width:100%}
+  .bars .lbl{font-size:11px;color:var(--muted)}
+  .bars .lbl.today{color:var(--i-stats);font-weight:600}
+  .bars .val{font-size:10px;line-height:1.15;text-align:center;color:var(--muted);font-variant-numeric:tabular-nums}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin:14px 0 8px}
+  .legend .item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+  .legend .dot{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+
+  .insightBox{margin-top:34px}
+  .insightRow{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .insightLbl{width:110px;font-size:12.5px;flex:0 0 auto}
+  .insightTrack{flex:1;height:8px;border-radius:999px;background:var(--surface2);overflow:hidden}
+  .insightTrack i{display:block;height:100%;background:linear-gradient(90deg,var(--c-timer),var(--c-stats))}
+  .insightVal{font-size:12px;color:var(--muted);width:54px;text-align:right;flex:0 0 auto}
+  .insightSuggestion{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;font-size:13px;margin-top:12px;line-height:1.5;backdrop-filter:blur(10px)}
+
+  .logRow{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)}
+  .logRow .dot{width:10px;height:10px;border-radius:50%;margin-top:5px;flex:0 0 auto}
+  .logRow .logBody{flex:1 1 auto;min-width:0}
+  .logHead{margin:0 0 3px;font-size:13.5px}
+  .logNote{margin:0;font-size:13px;color:var(--text);word-break:break-word}
+  .logNote.muted{font-style:italic}
+  .logEdit{flex:0 0 auto;align-self:flex-start;background:none;border:none;color:var(--muted);font-size:15px;
+    cursor:pointer;padding:2px 6px;border-radius:8px;transition:background .15s,color .15s}
+  .logEdit:hover{background:var(--surface);color:var(--text)}
+
+  .yearNav{display:flex;align-items:center;justify-content:center;gap:16px;margin:34px 0 14px}
+  .yearNav button{width:30px;height:30px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--text)}
+  .yearNav .y{font-family:var(--head);font-size:15px;min-width:44px;text-align:center}
+  #weekList{display:flex;flex-direction:column;gap:8px}
+  .weekrow{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:14px;
+    background:var(--surface2);border:1px solid var(--border);transition:background .15s,transform .15s}
+  .weekrow:hover{background:var(--surface)}
+  .weekrow.current{background:color-mix(in srgb, var(--c-stats) 14%, var(--surface2));
+    border-color:color-mix(in srgb, var(--c-stats) 45%, var(--border));box-shadow:0 0 0 1px color-mix(in srgb, var(--c-stats) 25%, transparent)}
+  .weekrow.current .range{color:var(--i-stats);font-weight:700}
+  .weekrow .range{flex:1;font-size:13.5px;min-width:0}
+  .weekrow .mini{height:9px;border-radius:999px;overflow:hidden;display:flex;width:80px;background:var(--panel);flex:0 0 auto;box-shadow:inset 0 0 0 1px var(--border)}
+  .weekrow .mini span{height:100%}
+  .weekrow .total{font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums;flex:0 0 auto;min-width:64px;text-align:right}
+
+  /* ---------- aba Frases (js/quotes.js) ---------- */
+  .qHero{background:linear-gradient(150deg,color-mix(in srgb,var(--c-quotes) 20%,var(--surface)),var(--surface));
+    border:1px solid color-mix(in srgb,var(--c-quotes) 40%,var(--border));border-radius:22px;padding:24px 20px 18px;
+    box-shadow:var(--glow);backdrop-filter:blur(10px);margin-bottom:18px}
+  .qKicker{font-family:var(--head);font-size:12px;color:var(--i-quotes);letter-spacing:.4px;margin:0 0 12px}
+  .qText{font-family:var(--head);font-size:22px;line-height:1.45;margin:0 0 14px;font-weight:400}
+  .qAuthor{margin:0 0 3px;font-size:14px}
+  .qAuthor.sm{font-size:13px}
+  .qMeta{margin:0;font-size:12px;line-height:1.5;color:var(--muted)}
+  .qActions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .qBtn{min-height:40px;padding:8px 14px;border-radius:999px;font-size:13px;background:var(--surface2);border:1px solid var(--border);color:var(--text)}
+  .qBtn.on{color:var(--i-quotes);border-color:var(--c-quotes)}
+  .qChips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}
+  .qChips::-webkit-scrollbar{display:none}
+  .qChip{flex:0 0 auto;min-height:38px;padding:8px 14px;border-radius:999px;font-size:13px;background:var(--surface2);border:1px solid var(--border);color:var(--text);white-space:nowrap}
+  .qChip.on{background:var(--c-quotes);border-color:var(--c-quotes);color:#231204;font-weight:700}
+  .qCard{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-bottom:12px;backdrop-filter:blur(10px)}
+  .qCardText{font-family:var(--head);font-size:16.5px;line-height:1.5;margin:0 0 8px}
+  
+  .panelCard{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px;backdrop-filter:blur(10px);box-shadow:var(--glow)}
+  .tdTop{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}
+  .tdSubTabs{display:flex;gap:8px;margin-bottom:22px}
+  .tdTop .tdSubTabs{margin-bottom:0;flex-wrap:wrap}
+  .tdSubTabs button{font-size:13px;padding:7px 14px;border-radius:999px;color:var(--muted);border:1px solid transparent}
+  .tdSubTabs button.on{background:var(--surface2);border-color:var(--border);color:var(--text)}
+  .tdTop .tdSubTabs button{font-size:14px;font-weight:600;padding:11px 18px}
+  select.f{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:10px 12px;font-size:14px;outline:none;transition:border-color .15s;appearance:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2393A0B4'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
+  select.f:focus{border-color:var(--c-timer)}
+  input.bigInput{padding:14px 16px;font-size:16px;border-radius:14px}
+
+  /* compositor: digitou + Enter = adicionado */
+  .planComposer{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:12px;margin-bottom:16px;backdrop-filter:blur(10px);box-shadow:var(--glow)}
+  .composerRow{display:flex;gap:10px;align-items:center}
+  .composerInput{flex:1;min-width:0;background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:14px;padding:15px 16px;font-size:16px;outline:none;font-family:inherit;transition:border-color .15s}
+  .composerInput:focus{border-color:var(--c-tada)}
+  .composerAdd{width:52px;height:52px;border-radius:16px;background:var(--c-tada);color:var(--on-fill);font-size:28px;line-height:1;flex:0 0 auto;box-shadow:0 6px 18px rgba(244,96,140,.4)}
+  .composerAdd:active{transform:scale(.92)}
+  .chipRow{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .cChip{display:inline-flex;align-items:center;gap:6px;min-height:42px;padding:9px 15px;border-radius:999px;font-size:13.5px;color:var(--muted);background:var(--surface2);border:1px solid var(--border)}
+  .cChip.set{color:var(--text);border-color:var(--c-tada)}
+  .cChip.ref{color:var(--text);border-color:var(--pc,var(--border));background:color-mix(in srgb,var(--pc,#888) 14%,var(--surface2))}
+  .cChip .dot,.pill .dot{width:10px;height:10px;border-radius:50%;background:var(--pc,#888);flex:0 0 auto}
+  .cChip:active,.pill:active{transform:scale(.96)}
+
+  /* faixa de dias */
+  .dayStrip{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 10px;margin-bottom:6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .dayStrip::-webkit-scrollbar{display:none}
+  .dayBtn{flex:0 0 auto;min-width:58px;padding:10px 6px 8px;border-radius:18px;background:var(--surface);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:3px}
+  .dayBtn .dW{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .dayBtn .dN{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+  .dayBtn .dC{min-width:18px;height:18px;border-radius:999px;font-size:10.5px;font-weight:700;line-height:18px;text-align:center;color:transparent}
+  .dayBtn .dC.has{background:rgba(244,96,140,.18);color:var(--i-tada)}
+  .dayBtn.on{background:var(--c-tada);border-color:var(--c-tada);box-shadow:0 6px 18px rgba(244,96,140,.35)}
+  .dayBtn.on .dW,.dayBtn.on .dN{color:var(--on-fill)}
+  .dayBtn.on .dC.has{background:rgba(6,18,27,.16);color:var(--on-fill)}
+
+  /* cabeçalho do dia */
+  .dayHead{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:10px 2px 14px}
+  .dayTitle{font-family:var(--head);font-size:26px;margin:0 0 2px;text-transform:capitalize}
+  .daySub{margin:0;font-size:12.5px;color:var(--muted)}
+  .tdBig{font-size:44px;line-height:1;flex:0 0 auto}
+
+  /* lista */
+  .tSec{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:4px 14px;margin-bottom:14px}
+  .tSecHead{display:flex;align-items:center;justify-content:space-between;font-family:var(--head);font-size:13.5px;color:var(--muted);margin:0 2px 8px}
+  .tSecHead + .tdRow{border-top:none}
+  .tSec:has(> .tSecHead){padding-top:12px}
+  .tEmpty{text-align:center;padding:38px 10px 30px}
+  .tEmptyIco{font-size:44px;margin:0 0 6px}
+  .tEmptyT{font-family:var(--head);font-size:17px;margin:0 0 6px}
+
+  /* folha (bottom sheet) dos seletores e do detalhe */
+  .sheetWrap{align-items:flex-end;padding:0}
+  @media(min-width:600px){.sheetWrap{align-items:center;padding:16px}}
+  .sheetBox{background:var(--panel);border:1px solid var(--border);border-radius:24px 24px 0 0;width:100%;max-width:480px;max-height:88vh;overflow-y:auto;padding:8px 20px calc(22px + env(safe-area-inset-bottom));box-shadow:0 -10px 40px rgba(0,0,0,.4);animation:modalIn .3s var(--ease-fluid);box-sizing:border-box}
+  @media(min-width:600px){.sheetBox{border-radius:24px}}
+  .sheetGrip{width:40px;height:4px;border-radius:2px;background:var(--border);margin:4px auto 10px}
+  .sheetHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .sheetTitle{font-family:var(--head);font-size:18px;margin:0}
+  .sheetClose{width:38px;height:38px;border-radius:50%;background:var(--surface);color:var(--muted);font-size:15px}
+  .sheetLbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:18px 0 10px}
+  .pillGrid{display:flex;flex-wrap:wrap;gap:10px}
+  .pill{display:inline-flex;align-items:center;gap:8px;min-height:46px;padding:11px 18px;border-radius:999px;font-size:14.5px;background:var(--surface2);border:1.5px solid var(--border);color:var(--text)}
+  .pill.on{background:color-mix(in srgb,var(--pc,var(--c-tada)) 22%,var(--surface2));border-color:var(--pc,var(--c-tada));font-weight:600}
+  .pill.add{color:var(--i-tada);border-style:dashed;border-color:var(--c-tada)}
+  .bigSave{margin-top:22px;padding:16px;font-size:16px;border-radius:16px;background:var(--c-tada)}
+  .dText{margin-bottom:12px}
+  .dActions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px}
+  .act{padding:14px 10px;border-radius:14px;font-size:14.5px;font-weight:600;background:var(--surface2);border:1px solid var(--border);color:var(--text)}
+  .act.danger{color:var(--i-danger)}
+
+  .insightLbl .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:2px;vertical-align:-1px;flex:0 0 auto}
+
+
+  /* ---------- Ta-da: done-list, gratidão e amigos (js/tada.js) ---------- */
+  .tdStyles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:6px 0 8px}
+  .tdStyleBtn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px 6px 10px;border-radius:16px;background:var(--surface);border:1px solid var(--border);color:var(--muted);font-size:13px;font-weight:600}
+  .tdStyleBtn .tdStyleIco{font-size:22px;line-height:1}
+  .tdStyleBtn.on{color:var(--text);border-color:var(--c-tada);background:color-mix(in srgb,var(--c-tada) 16%,var(--surface))}
+  .tdStyleHint{font-size:12.5px;color:var(--muted);margin:0 2px 14px;line-height:1.45}
+  .cChip.wChip{min-height:40px}
+  .pillSub{font-size:11.5px;color:var(--muted);font-weight:400}
+  .tdRow{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)}
+  .tdRow:last-child{border-bottom:none}
+  .tdBody{flex:1;min-width:0;display:flex;align-items:center;gap:12px;text-align:left;color:inherit;font:inherit;padding:0;background:none;border:none;cursor:pointer}
+  .tdW{font-size:21px;line-height:1;flex:0 0 auto;width:28px;text-align:center}
+  .tdMain{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .tdT{font-size:15.5px;line-height:1.35;word-break:break-word;flex:1;min-width:0}
+  .tdMain .tdT{flex:none}
+  .tdMeta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-size:12px;color:var(--muted)}
+  .tdTag{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;color:var(--muted)}
+  .tdTag i,.tdDot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:0 0 auto}
+  .tdRow.auto .tdT{color:var(--text)}
+  .tdRow.star{background:linear-gradient(90deg,color-mix(in srgb,var(--c-tada) 10%,transparent),transparent)}
+  .tdStar{font-size:14px}
+  .tdStarBtn{width:42px;height:42px;border-radius:50%;font-size:20px;color:var(--muted);flex:0 0 auto}
+  .tdStarBtn.on{color:var(--i-tada)}
+  .tdHero{background:linear-gradient(150deg,color-mix(in srgb,var(--c-tada) 18%,var(--surface)),var(--surface));border:1px solid color-mix(in srgb,var(--c-tada) 40%,var(--border));border-radius:20px;padding:16px 18px;margin-bottom:14px}
+  .tdHeroK{font-family:var(--head);font-size:13px;color:var(--i-tada);margin:0 0 8px}
+  .tdHeroItem{font-family:var(--head);font-size:17px;line-height:1.4;margin:0 0 6px}
+  .tdWrap{margin-top:18px}
+  .tdWrapLbl{display:block;font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin:0 2px 8px}
+  .qkGroup{margin-bottom:16px}
+  .qkHead{font-family:var(--head);font-size:13.5px;color:var(--muted);margin:0 2px 8px}
+  .qkGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .qkBtn{display:flex;align-items:center;gap:8px;text-align:left;padding:11px 12px;border-radius:14px;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:13.5px;line-height:1.25;min-height:52px;position:relative}
+  .qkBtn .qkIco{font-size:19px;flex:0 0 auto}
+  .qkBtn span:nth-child(2){flex:1;min-width:0}
+  .qkTick{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:12px;color:transparent;flex:0 0 auto}
+  .qkBtn.on{border-color:var(--c-tada);background:color-mix(in srgb,var(--c-tada) 15%,var(--surface))}
+  .qkBtn.on .qkTick{background:var(--c-tada);border-color:var(--c-tada);color:var(--on-fill)}
+  .qkBtn:active{transform:scale(.97)}
+
+  /* ---------- 2.22: movimento e desempenho ---------- */
+  .wChip .wIco{display:inline-block}
+  /* Histórico: entrada de barras e calendário por CSS (só no modo completo; "Suave" e "reduzir movimento" não ligam) */
+  html[data-motion="full"]:not([data-fx="lite"]) #thContent.enter .thCell:not(.blank){animation:thPop .36s cubic-bezier(.34,1.56,.64,1) both;animation-delay:calc(min(var(--i,0),31)*14ms)}
+  html[data-motion="full"]:not([data-fx="lite"]) #thContent.enter .thBar i{transform-origin:0 50%;animation:thGrowX .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*90ms)}
+  html[data-motion="full"]:not([data-fx="lite"]) #thContent.enter .thYear button i{transform-origin:50% 100%;animation:thRise .64s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*38ms)}
+  @keyframes thPop{from{opacity:0;transform:scale(.6)}}
+  @keyframes thGrowX{from{transform:scaleX(0)}}
+  @keyframes thRise{from{transform:scaleY(0)}}
+
+  /* ---------- Ta-da → Histórico: estatísticas salvas por semana, mês e ano (js/tada-history.js) ---------- */
+  .thSeg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+  .thSeg button{padding:10px 6px;border-radius:14px;background:var(--surface);border:1px solid var(--border);color:var(--muted);font-size:13.5px;font-weight:600}
+  .thSeg button.on{color:var(--text);border-color:var(--c-tada);background:color-mix(in srgb,var(--c-tada) 16%,var(--surface))}
+  .thNav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:14px}
+  .thNav .thArrow{width:44px;height:44px;border-radius:50%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-size:20px;flex:0 0 auto}
+  .thNav .thArrow:disabled{opacity:.35}
+  .thTitle{flex:1;min-width:0;text-align:center}
+  .thTitle b{display:block;font-family:var(--head);font-size:17px}
+  .thTitle span{font-size:12px;color:var(--muted)}
+  .thToday{font-size:12.5px;color:var(--i-tada);padding:6px 10px}
+  .thHero{display:flex;align-items:center;gap:14px;background:linear-gradient(150deg,color-mix(in srgb,var(--c-tada) 18%,var(--surface)),var(--surface));border:1px solid color-mix(in srgb,var(--c-tada) 40%,var(--border));border-radius:20px;padding:16px 18px;margin-bottom:14px}
+  .thHeroIco{font-size:46px;line-height:1;flex:0 0 auto}
+  .thHeroN{font-family:var(--head);font-size:30px;line-height:1.1;margin:0}
+  .thHeroN small{font-size:14px;color:var(--muted);font-family:inherit;font-weight:400}
+  .thHeroTxt{margin:4px 0 0;font-size:13.5px;line-height:1.45;color:var(--text)}
+  .thHeroUp{margin:6px 0 0;font-size:12.5px;color:var(--i-tada);font-weight:600}
+  .thGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+  .thCard{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px 14px;min-width:0}
+  .thCard .k{display:block;font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+  .thCard .v{display:block;font-family:var(--head);font-size:20px;line-height:1.2;word-break:break-word}
+  .thCard .s{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+  .thSec{margin:18px 2px 8px;font-family:var(--head);font-size:13.5px;color:var(--muted)}
+  .thBar{display:flex;height:12px;border-radius:999px;overflow:hidden;background:var(--surface2);margin:2px 0 8px}
+  .thBar i{display:block;height:100%}
+  .thBar .b1{background:#8FAE6B}.thBar .b2{background:#4CAF6D}.thBar .b3{background:#2E8B57}
+  .thLegend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--muted);margin-bottom:6px}
+  .thCal{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px}
+  .thCal .wd{font-size:10.5px;color:var(--muted);text-align:center;text-transform:uppercase}
+  .thCell{aspect-ratio:1/1;min-height:40px;border-radius:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:13px;padding:0}
+  .thCell small{font-size:10px;color:var(--muted);line-height:1}
+  .thCell.l1{background:color-mix(in srgb,var(--c-tada) 14%,var(--surface))}
+  .thCell.l2{background:color-mix(in srgb,var(--c-tada) 28%,var(--surface))}
+  .thCell.l3{background:color-mix(in srgb,var(--c-tada) 46%,var(--surface));border-color:var(--c-tada)}
+  .thCell.today{outline:2px solid var(--c-tada);outline-offset:-2px}
+  .thCell.off{opacity:.35;border-style:dashed}
+  .thCell.blank{visibility:hidden}
+  .thYear{display:flex;align-items:flex-end;gap:5px;height:150px;margin:6px 0 10px}
+  .thYear button{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;padding:0;background:none;border:none;color:var(--muted);font-size:10.5px}
+  .thYear button i{display:block;width:100%;border-radius:8px 8px 3px 3px;background:var(--c-tada);min-height:4px}
+  .thYear button.empty i{background:var(--surface2)}
+  .thYear button b{font-size:11px;color:var(--text);font-weight:600}
+  .thRow{display:flex;gap:10px;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--border)}
+  .thRow:last-child{border-bottom:none}
+  .thRow .d{flex:0 0 auto;min-width:46px;font-size:12px;color:var(--muted);padding-top:3px}
+  .thRow .t{flex:1;min-width:0;font-size:14.5px;line-height:1.4;word-break:break-word}
+  .thRow .t em{display:block;font-style:normal;font-size:12.5px;color:var(--muted);margin-top:2px}
+  .thNote{font-size:12px;color:var(--muted);line-height:1.5;margin:14px 2px 0}
+  .thLoading{text-align:center;color:var(--muted);padding:34px 10px}
+  /* gratidão (dourado, como Ajustes) */
+  .grBox{border-color:color-mix(in srgb,var(--c-settings) 35%,var(--border))}
+  .grLbl{display:block;font-size:12px;color:var(--i-settings);text-transform:uppercase;letter-spacing:.5px;margin:12px 2px 6px}
+  .grSave{background:var(--c-settings);color:var(--on-fill)}
+  .grDay{font-family:var(--head);font-size:13px;color:var(--muted);margin:16px 2px 6px;text-transform:capitalize}
+  .grRowBtn,.grRow{display:flex;flex-direction:column;gap:4px;width:100%;text-align:left;padding:13px 0;border-bottom:1px solid var(--border);color:inherit;font:inherit;background:none;border-top:none;border-left:none;border-right:none;cursor:pointer}
+  .grRow{cursor:default;padding:10px 0}
+  .grRowBtn:last-child,.grRow:last-child{border-bottom:none}
+  .grWhat{font-size:15.5px;line-height:1.4;margin:0;display:block;word-break:break-word}
+  .grHow{font-size:13.5px;line-height:1.45;color:var(--muted);margin:0;display:block;word-break:break-word;padding-left:24px}
+  .grMeta{font-size:11.5px;color:var(--muted);display:block;padding-left:24px}
+  .reflChips + .grLbl,.grBox .reflChips{margin-bottom:2px}
+  /* amigos */
+  .tdFriend{display:block;width:100%;text-align:left;color:inherit;font:inherit;background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:12px 14px;margin-bottom:12px;backdrop-filter:blur(10px)}
+  .tdFriendHead{display:flex;align-items:center;gap:10px}
+  .tdFriendName{flex:1;min-width:0;font-weight:600;font-size:15px;display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px}
+  .tdFriend .chev{color:var(--muted);font-size:20px}
+  .tdFriendBody{display:block;margin-top:6px}
+  .tdFriendBody .tdRow{padding:8px 0}
+  .tdFriendBody .tdT{font-size:14px}
+  .tdFriendWrap{font-style:italic;color:var(--muted);font-size:13px;margin:8px 0 0}
+  .tdFriendsBar{display:flex;gap:10px;justify-content:space-between;align-items:center;margin:0 2px 12px}
+
+  /* ---------- Estatísticas: análise de uma semana ---------- */
+  button.weekrow{width:100%;text-align:left;color:inherit;font:inherit;cursor:pointer}
+  .weekrow .chev{color:var(--muted);font-size:18px;flex:0 0 auto}
+  .wkBox{max-width:520px;max-height:90vh;overflow-y:auto;box-sizing:border-box;padding:16px 18px 24px}
+  .wkNav{display:flex;align-items:center;gap:10px;position:sticky;top:-16px;background:var(--panel);padding:8px 0 12px;margin-bottom:6px;z-index:2}
+  .wkTitle{flex:1;text-align:center}
+  .wkRange{font-family:var(--head);font-size:17px;margin:0}
+  .wkSub{font-size:11.5px;color:var(--muted);margin:2px 0 0}
+  .wkArrow,.wkClose{width:40px;height:40px;border-radius:50%;background:var(--surface);border:1px solid var(--border);font-size:18px;color:var(--text);flex:0 0 auto}
+  .wkArrow:disabled{opacity:.3}
+  .wkGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}
+  .wkGrid.three{grid-template-columns:repeat(3,1fr)}
+  .wkCard{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:12px}
+  .wkV{font-size:20px;font-weight:700;margin:0 0 3px;font-variant-numeric:tabular-nums}
+  .wkL{font-size:11px;color:var(--muted);margin:0;text-transform:uppercase;letter-spacing:.4px}
+  .wkS{font-size:12px;margin:5px 0 0}
+  .dl{font-weight:700;font-size:12px;color:var(--muted)}
+  .dl.up{color:var(--i-good)}
+  .dl.down{color:var(--i-warn)}
+  .wkBars{height:160px}
+  .wkBars .lbl{text-align:center;line-height:1.25}
+  .wkShare{display:flex;height:12px;border-radius:999px;overflow:hidden;background:var(--surface2);margin-bottom:10px}
+  .wkShare span{height:100%}
+  .wkInsight{font-size:13px;margin:0 0 16px}
+  .wkSubj{margin-bottom:14px}
+  .wkSubjTop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:6px;font-size:14px}
+  .wkSubjName{display:inline-flex;align-items:center;gap:7px;min-width:0}
+  .wkSubjName .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto}
+  .wkSubjVal{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+  .wkSubjSub{font-size:12px;color:var(--muted);margin:5px 0 0}
+  .wkDropped{font-size:12.5px;color:var(--muted);margin:6px 0 0;line-height:1.9}
+  .wkDropChip{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border-radius:999px;background:var(--surface2);border:1px solid var(--border);color:var(--text)}
+  .wkDropChip i{width:8px;height:8px;border-radius:50%}
+
+  /* ---------- Cronômetro: mini-resumo do dia (espaço próprio, abaixo do relógio) ---------- */
+  .dayRecapCard{margin-top:22px}
+  .dayRecapGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0 14px}
+  .dayRecapStat{text-align:center}
+  .dayRecapStat .v{font-family:var(--head);font-size:18px;margin:0}
+  .dayRecapStat .l{font-size:10.5px;color:var(--muted);margin:2px 0 0}
+  .dayRecapBars{display:flex;flex-direction:column;gap:8px}
+
+  /* ---------- Room ---------- */
+  .syncPanel{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:16px 18px;margin-bottom:26px;backdrop-filter:blur(14px);box-shadow:var(--glow)}
+  .syncActive{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .syncLabel{margin:0 0 2px;font-size:12px;color:var(--muted)}
+  .syncClock{margin:0;font-size:26px;font-variant-numeric:tabular-nums;color:var(--i-room)}
+  .syncBtns{display:flex;gap:8px}
+  .syncBtns .primary,.syncBtns .ghost{padding:9px 16px;font-size:12.5px}
+
+  .rowbtn{width:100%;background:var(--c-room);color:var(--on-fill);border-radius:6px;padding:11px;font-size:14px;font-weight:600;margin-bottom:22px}
+  .or{display:flex;align-items:center;gap:12px;margin-bottom:22px}
+  .or i{flex:1;height:1px;background:var(--border)}
+  .or span{font-size:11px;color:var(--muted)}
+  .joinrow{display:flex;gap:8px}
+  .roomSwitcher{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+  .roomChip{padding:7px 14px;border-radius:999px;border:1px solid var(--border);background:var(--surface2);
+    font-size:13px;color:var(--muted);cursor:pointer;font-weight:500}
+  .roomChip.on{background:var(--c-room);color:#04241C;border-color:var(--c-room);font-weight:700}
+  .joinMoreRow{margin:16px 0}
+  .joinMoreRow .joinrow{margin-top:8px;max-width:280px}
+  .joinrow input{flex:1;letter-spacing:2px;text-transform:uppercase}
+  .joinrow button{background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:0 18px;font-size:14px}
+  .roomtop{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+  .roomtop h2{font-family:var(--head);font-size:18px;font-weight:400;margin:0}
+  .code{display:flex;align-items:center;gap:8px;margin-bottom:24px;font-size:13px;color:var(--muted)}
+  .code b{color:var(--i-room);letter-spacing:2px;font-weight:600}
+  .member{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:16px;margin-bottom:10px;backdrop-filter:blur(10px);animation:fadeIn .3s var(--ease-fluid);transition:transform .18s var(--ease-fluid),border-color .18s}
+  @media(hover:hover){.member:hover{transform:translateY(-2px);border-color:rgba(255,255,255,.22)}}
+  .member .rank{width:18px;text-align:center;font-size:11px;color:var(--muted)}
+  .member .who{flex:1;min-width:0}
+  .member .who p.nm{margin:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .member .status{font-size:11.5px;color:var(--muted);margin:1px 0 0;display:flex;align-items:center;gap:5px}
+  .member .status.online{color:var(--i-room)}
+  .member .status.studying{color:var(--i-timer);font-weight:600}
+  .member .status.doingTask{color:var(--i-tada);font-weight:600}
+  .member .subjpill{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:999px;padding:1px 7px}
+  .member .subjpill .d{width:7px;height:7px;border-radius:50%}
+  .track{height:6px;background:var(--surface2);border-radius:999px;margin-top:6px;overflow:hidden}
+  .track i{display:block;height:100%;background:var(--c-room)}
+  .member .right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex:0 0 auto}
+  .member .amt{font-size:13px;font-variant-numeric:tabular-nums}
+  .member .msgbtn{font-size:11px;color:var(--i-room);border:1px solid var(--border);border-radius:999px;padding:3px 9px;background:var(--surface)}
+  .member .streak{font-size:11px;color:var(--i-timer)}
+  .muted{color:var(--muted);font-size:13px;line-height:1.6}
+
+  .msgList{margin-top:10px;display:flex;flex-direction:column;gap:10px;max-height:320px;overflow-y:auto;scroll-behavior:smooth}
+  .msg{display:flex;gap:10px;align-items:flex-start;animation:fadeIn .3s var(--ease-fluid)}
+  .msg .bubble{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:9px 12px;max-width:80%}
+  .msg .lock{opacity:.55;font-size:10px;margin-left:4px}
+  .msg.mine{flex-direction:row-reverse}
+  .msg.mine .bubble{background:rgba(15,184,138,.12);border-color:rgba(15,184,138,.35)}
+  .msg .who{font-size:11px;color:var(--muted);margin:0 0 2px}
+  .msg .body{font-size:13.5px;margin:0;word-break:break-word}
+  .msg .when{font-size:10px;color:var(--muted);margin:3px 0 0}
+  .composer{display:flex;gap:8px;margin-top:14px;align-items:flex-end}
+  .composer textarea{flex:1;resize:none;height:42px;line-height:1.35;padding:11px 12px}
+  .composer button{background:var(--c-room);color:var(--on-fill);border-radius:999px;width:42px;height:42px;font-size:16px;flex:0 0 auto}
+  .quickmsgs{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+  .quickmsgs button{font-size:12px;border:1px solid var(--border);border-radius:999px;padding:5px 11px;background:var(--surface);color:var(--muted)}
+  .msgTo{font-size:12px;color:var(--muted);margin-top:10px;display:flex;align-items:center;gap:8px}
+  .msgTo b{color:var(--i-room)}
+  .msgTo button{color:var(--muted);text-decoration:underline;font-size:11px}
+
+  /* ---------- Settings ---------- */
+  .swatches{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;align-items:center}
+  .swatches button{width:26px;height:26px;border-radius:50%}
+  .swatches button.on{outline:2px solid var(--text);outline-offset:2px}
+  .swatches input[type="color"]{-webkit-appearance:none;appearance:none;width:26px;height:26px;padding:0;border:1px solid var(--border);border-radius:50%;background:conic-gradient(from 0deg,#FF6A45,#F5B93D,#22D3A6,#2FD9EE,#7C5CFA,#E6408F,#FF6A45);cursor:pointer}
+  .swatches input[type="color"].on{outline:2px solid var(--text);outline-offset:2px}
+  .swatches input[type="color"]::-webkit-color-swatch-wrapper{padding:0;border-radius:50%}
+  .swatches input[type="color"]::-webkit-color-swatch{border:none;border-radius:50%}
+  .swatches input[type="color"]::-moz-color-swatch{border:none;border-radius:50%}
+  .danger{color:var(--i-danger);font-size:13px}
+  .subjlist .row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)}
+  .subjlist .dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto}
+  .subjlist .name{flex:1;font-size:14px}
+  .subjlist button.x{color:var(--muted);font-size:15px;padding:2px 6px}
+  .addSubj{display:flex;gap:8px;margin-top:14px;align-items:center}
+  .addSubj input{flex:1}
+  .addSubj button.go{background:var(--c-settings);color:var(--on-fill);border-radius:6px;padding:10px 16px;font-size:13px;font-weight:600}
+  .settingsSave{background:var(--c-settings) !important}
+  .wallRow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+  .wallPreview{width:64px;height:64px;border-radius:10px;border:1px solid var(--border);background-size:cover;background-position:center;background-color:var(--surface2);flex:0 0 auto}
+  .btnOutline{border:1px solid var(--border);border-radius:6px;padding:9px 14px;font-size:13px;background:var(--surface)}
+
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(96px + env(safe-area-inset-bottom));background:#F3F6FB;color:#0A1018;padding:10px 18px;border-radius:999px;font-size:13px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s;z-index:200;max-width:88vw;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+  .toast.on{opacity:1}
+  .msgPop{position:fixed;left:50%;transform:translateX(-50%) translateY(-14px);top:calc(env(safe-area-inset-top) + 12px);background:#F3F6FB;color:#0A1018;border-radius:14px;padding:12px 16px;z-index:60;max-width:min(420px,92vw);box-shadow:0 10px 30px rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s}
+  .msgPop:not(.on){visibility:hidden;transition:opacity .25s,transform .25s,visibility 0s .3s}
+  .msgPop.on{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto;visibility:visible}
+  .msgPop .from{font-size:11px;opacity:.75;margin:0 0 3px}
+  .msgPop .body{font-size:14px;margin:0}
+  .msgPop .close{position:absolute;top:6px;right:10px;color:#0A1018;opacity:.5;font-size:14px}
+  @media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}html{scroll-behavior:auto}}
+
+  /* ---------- perfil de amigo, apagar mensagem, estatísticas aprofundadas ---------- */
+  .member[data-open-friend]{cursor:pointer}
+  .member[data-open-friend]:active{opacity:.85}
+  .msg .delMsg{color:var(--muted);opacity:.7;font-size:11px;margin-left:6px;vertical-align:middle}
+  .msg .delMsg:hover{opacity:1;color:var(--i-danger)}
+
+  .friendWrap{position:fixed;inset:0;z-index:75;background:var(--bg-grad);overflow-y:auto;padding:calc(env(safe-area-inset-top) + 18px) 20px calc(48px + env(safe-area-inset-bottom))}
+  .friendBox{max-width:620px;margin:0 auto}
+  .friendClose{font-size:13px;color:var(--muted);margin-bottom:18px;display:flex;align-items:center;gap:4px}
+  .friendHead{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+  .friendName{font-family:var(--head);font-size:19px;font-weight:400;margin:0 0 3px;color:var(--text)}
+  .friendSeen{font-size:12.5px;color:var(--muted);margin:0}
+  #friendAvatar .avatar,#friendAvatar img{width:52px;height:52px}
+
+  .recordGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px}
+  @media(min-width:520px){.recordGrid{grid-template-columns:repeat(4,1fr)}}
+  .recordCard{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 13px;backdrop-filter:blur(10px)}
+  .recordCard .rv{font-size:19px;font-weight:700;color:var(--i-stats);margin:0 0 3px;font-variant-numeric:tabular-nums}
+  .recordCard .rl{font-size:11px;color:var(--muted);margin:0}
+  .recordCard .rs{font-size:10.5px;color:var(--muted);margin:3px 0 0;font-style:italic}
+
+  .heatmapWrap{overflow-x:auto;padding-bottom:6px}
+  .heatmapMonths{display:flex;gap:3px;margin-bottom:4px;min-width:max-content}
+  .heatmapMonths span{width:13px;font-size:9.5px;color:var(--muted)}
+  .heatmap{display:flex;gap:3px;min-width:max-content}
+  .hmCol{display:flex;flex-direction:column;gap:3px}
+  .hmCell{width:10px;height:10px;border-radius:2px;background:var(--surface2);display:block}
+  .hmCell[data-lv="1"]{background:rgba(34,211,166,.25)}
+  .hmCell[data-lv="2"]{background:rgba(34,211,166,.48)}
+  .hmCell[data-lv="3"]{background:rgba(34,211,166,.72)}
+  .hmCell[data-lv="4"]{background:var(--c-room)}
+  .hmCell.hmFuture{background:transparent}
+  .hmScale{display:flex;align-items:center;gap:4px;margin-top:8px;font-size:10px;color:var(--muted)}
+  .hmScale i{width:10px;height:10px;border-radius:2px;background:var(--surface2);display:inline-block}
+  .hmScale i[data-lv="1"]{background:rgba(34,211,166,.25)}
+  .hmScale i[data-lv="2"]{background:rgba(34,211,166,.48)}
+  .hmScale i[data-lv="3"]{background:rgba(34,211,166,.72)}
+  .hmScale i[data-lv="4"]{background:var(--c-room)}
+
+  /* ---------- Diário: filtro por matéria e horário ---------- */
+  #historyFilterBox{margin-bottom:6px}
+  .hxScroll{display:flex;gap:8px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .hxScroll::-webkit-scrollbar{display:none}
+  .hxScroll .chip{flex:0 0 auto;white-space:nowrap}
+  .logTime{margin:0 0 3px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+  /* ---------- Aba Horários ---------- */
+  .hx{display:flex;flex-direction:column;gap:18px}
+  .hxKpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  @media(min-width:520px){.hxKpis{grid-template-columns:repeat(4,1fr)}}
+  .hxKpi{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:14px 14px 12px;min-width:0}
+  .hxKpi .v{margin:0 0 5px;font-size:20px;font-weight:700;line-height:1.15;color:var(--text);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+  .hxKpi .l{margin:0;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .hxCard{background:var(--surface2);border:1px solid var(--border);border-radius:16px;padding:16px 14px 14px;min-width:0}
+  .hxCardHead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .hxCardHead .sechead,.hxCard>.sechead{margin:0 0 0}
+  .hxCard>.sechead{margin-bottom:12px}
+  .hxSeg{display:inline-grid;grid-auto-flow:column;gap:2px;padding:3px;background:var(--surface2);border:1px solid var(--border);border-radius:10px}
+  .hxSeg button{padding:5px 11px;border:0;border-radius:7px;background:transparent;color:var(--muted);font-size:12px}
+  .hxSeg button.on{background:var(--surface);color:var(--text);font-weight:600}
+
+  .hxPlot{position:relative;height:180px;margin-top:6px}
+  .hxGrid{position:absolute;left:0;right:0;height:0;border-top:1px dashed var(--border);pointer-events:none}
+  .hxGrid span{position:absolute;left:0;top:-14px;font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .hxCols{position:absolute;inset:0;display:grid;grid-template-columns:repeat(24,1fr);gap:3px;border-bottom:1px solid var(--border)}
+  .hxCol{min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;padding:0;border:0;background:transparent;cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .hxBar{display:flex;flex-direction:column-reverse;width:100%;border-radius:4px 4px 0 0;overflow:hidden;transition:height .45s var(--ease-fluid),opacity .2s}
+  .hxBar span{display:block;width:100%}
+  .hxBar.empty{height:2px;background:var(--border);border-radius:0}
+  .hxPlot.hasSel .hxCol:not(.on) .hxBar:not(.empty){opacity:.5}
+  .hxCol:hover .hxBar:not(.empty){opacity:1}
+  .hxCol.on{background:linear-gradient(to top,var(--surface),transparent);border-radius:6px 6px 0 0}
+  .hxAxis{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;margin-top:7px}
+  .hxAxis span{display:flex;justify-content:center;white-space:nowrap;font-size:10px;color:var(--muted)}
+  .hxInsight{margin:14px 0 0;font-size:13px;line-height:1.5;color:var(--text)}
+
+  .hxDetail{margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+  .hxDetailHead{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:4px 12px;margin-bottom:10px}
+  .hxDetailTitle{margin:0;font-family:var(--head);font-size:16px;font-weight:600}
+  .hxDetailSum{margin:0;font-size:13px;color:var(--muted)}
+  .hxPills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+  .hxPill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;border:1px solid var(--border);font-size:12px;color:var(--text)}
+  .hxPill .dot{width:8px;height:8px;border-radius:50%}
+  .hxHint{margin:0 0 4px;font-size:12px;color:var(--muted)}
+
+  .hxList{display:flex;flex-direction:column}
+  .hxRow{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+  .hxRow:last-child{border-bottom:0;padding-bottom:0}
+  .hxRow .dot{width:10px;height:10px;border-radius:50%;margin-top:5px;flex:0 0 auto}
+  .hxRowBody{flex:1 1 auto;min-width:0}
+  .hxRowTop{display:flex;justify-content:space-between;gap:10px;margin:0 0 2px;font-size:14px;font-variant-numeric:tabular-nums}
+  .hxRowTop span{color:var(--muted);font-size:13px;white-space:nowrap}
+  .hxRowSub{margin:0;font-size:12px;color:var(--muted)}
+  .hxRowNote{margin:4px 0 0;font-size:13px;word-break:break-word}
+
+  .hxDayNav{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+  .hxDayNav button{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:20px;line-height:1}
+  .hxDayNav button:disabled{opacity:.3;cursor:default}
+  .hxDayLbl{flex:1 1 auto;min-width:0;text-align:center}
+  .hxDayLbl p{margin:0;font-size:14px;font-weight:600;text-transform:capitalize}
+  .hxDayLbl p.s{margin-top:2px;font-size:12px;font-weight:400;color:var(--muted);text-transform:none}
+  .hxStrip{position:relative;height:34px;border-radius:8px;background:var(--surface);border:1px solid var(--border);overflow:hidden}
+  .hxStrip i{position:absolute;top:0;bottom:0;width:1px;background:var(--border)}
+  .hxBlock{position:absolute;top:4px;bottom:4px;border-radius:4px}
+  .hxStripAxis{display:flex;justify-content:space-between;margin:5px 0 12px;font-size:10px;color:var(--muted)}
+
+  /* =====================================================================
+     v2.12 — CONTRASTE
+     --c-*     cor de PREENCHIMENTO (botões, barras, pontos): a mesma nos dois temas.
+     --i-*     a "tinta" da mesma cor para TEXTO e traços finos. Muda conforme o fundo e
+               sempre fica ≥ 4,5:1 (WCAG AA) sobre ele: escura e vívida no claro, clara e
+               vívida no escuro. (Usar --c-* direto como texto dava 1,5–2,7:1 no claro.)
+     --on-fill texto sobre qualquer preenchimento --c-* (≥ 6:1 em todos).
+     Quatro contextos, na ordem em que o CSS decide: tema escuro · tema claro ·
+     foto escura (vidro escuro) · foto clara (vidro claro) — com foto, manda o brilho da foto.
+     ===================================================================== */
+  :root, body.haswall{
+    --i-timer:#3CDDF3; --i-stats:#C2B1FF; --i-room:#3EE8BA; --i-settings:#FFC94F; --i-tada:#FF8DB0; --i-quotes:#FFA868;
+    --i-good:#3EE8BA; --i-warn:#FFC94F; --i-danger:#FF9B90;
+  }
+  :root[data-theme="light"], body.haswall[data-contrast="light"]{
+    --i-timer:#006A8E; --i-stats:#5126D6; --i-room:#006B4A; --i-settings:#8A4800; --i-tada:#B8164F; --i-quotes:#A83407;
+    --i-good:#006B4A; --i-warn:#8A5000; --i-danger:#B3120A;
+  }
+  @media (prefers-color-scheme:light){
+    :root[data-theme="system"]{
+      --i-timer:#006A8E; --i-stats:#5126D6; --i-room:#006B4A; --i-settings:#8A4800; --i-tada:#B8164F; --i-quotes:#A83407;
+      --i-good:#006B4A; --i-warn:#8A5000; --i-danger:#B3120A;
+    }
+  }
+  :root{
+    --on-fill:#06121B;
+    --ease-spring:cubic-bezier(.34,1.56,.64,1); --ease-out:cubic-bezier(.22,1,.36,1);
+    /* fundo vivo: 4 manchas de cor que derivam devagar (ver "fundo vivo" abaixo) */
+    --aur1:rgba(47,217,238,.20); --aur2:rgba(167,139,250,.22); --aur3:rgba(244,96,140,.16); --aur4:rgba(34,211,166,.15);
+    --tshadow:0 1px 2px rgba(0,0,0,.38);
+  }
+  :root[data-theme="light"]{
+    --aur1:rgba(0,190,235,.20); --aur2:rgba(140,100,255,.18); --aur3:rgba(255,90,150,.15); --aur4:rgba(0,214,165,.15);
+    --tshadow:none;
+  }
+  @media (prefers-color-scheme:light){
+    :root[data-theme="system"]{
+      --aur1:rgba(0,190,235,.20); --aur2:rgba(140,100,255,.18); --aur3:rgba(255,90,150,.15); --aur4:rgba(0,214,165,.15);
+      --tshadow:none;
+    }
+  }
+  /* sombra sutil em todo o texto (separa a palavra do fundo; sobre foto fica mais forte, ver body.haswall) */
+  main, header{ text-shadow:var(--tshadow) }
+  main button, main input, main textarea, main select, header button{ text-shadow:none }
+  /* interruptor desligado: o trilho antigo (--border) sumia no claro */
+  .slider{ background:color-mix(in srgb,var(--muted) 38%,transparent); transition:background .25s }
+  .slider::before{ transition:transform .45s var(--ease-spring),background .2s; box-shadow:0 1px 3px rgba(0,0,0,.35) }
+  /* foco de teclado visível (acessibilidade) e brilho de campo em foco */
+  :focus-visible{ outline:2px solid var(--i-timer); outline-offset:2px }
+  input.f:focus, textarea.f:focus, select.f:focus, .composerInput:focus{ box-shadow:0 0 0 3px color-mix(in srgb,var(--i-timer) 30%,transparent) }
+
+  /* =====================================================================
+     v2.12 — MOVIMENTO CINEMATOGRÁFICO (js/fx.js cuida da parte em JS)
+     Some com "reduzir movimento" do sistema e com Ajustes → Animações: Suave
+     (html[data-fx="lite"]). Anima só transform/opacity/translate/scale.
+     ===================================================================== */
+
+  /* ---------- fundo vivo (sem papel de parede) ---------- */
+  body::before{ content:""; position:fixed; inset:-25%; z-index:-3; pointer-events:none;
+    background:
+      radial-gradient(38% 34% at 18% 24%,var(--aur1),transparent 72%),
+      radial-gradient(34% 38% at 82% 18%,var(--aur2),transparent 72%),
+      radial-gradient(42% 38% at 72% 84%,var(--aur3),transparent 72%),
+      radial-gradient(34% 34% at 14% 80%,var(--aur4),transparent 72%);
+    animation:auroraDrift 34s ease-in-out infinite alternate; will-change:transform }
+  body.haswall::before{ display:none }
+  html[data-fx="lite"] body::before{ animation:none; will-change:auto }
+  @keyframes auroraDrift{
+    0%{ transform:translate3d(0,0,0) rotate(0deg) scale(1) }
+    50%{ transform:translate3d(3%,-2%,0) rotate(6deg) scale(1.08) }
+    100%{ transform:translate3d(-3%,3%,0) rotate(-5deg) scale(1.14) } }
+  /* papel de parede: câmera lenta (Ken Burns) */
+  html:not([data-fx="lite"]) body.haswall #wallpaper{ animation:kenBurns 42s ease-in-out infinite alternate; will-change:transform }
+  @keyframes kenBurns{ from{ transform:scale(1.04) translate3d(0,0,0) } to{ transform:scale(1.15) translate3d(-1.6%,-1.2%,0) } }
+
+  /* ---------- abertura: splash e login ---------- */
+  @keyframes titleReveal{
+    from{ opacity:0; letter-spacing:.32em; filter:blur(14px); transform:scale(1.1) }
+    to{ opacity:1; letter-spacing:0; filter:blur(0); transform:none } }
+  @keyframes cineChild{
+    from{ opacity:0; transform:translateY(24px) scale(.97); filter:blur(10px) }
+    to{ opacity:1; transform:none; filter:blur(0) } }
+  html:not([data-fx="lite"]) #splash h1{ animation:titleReveal .6s var(--ease-out) both }
+  html:not([data-fx="lite"]) #login .box > *{ animation:cineChild .9s var(--ease-out) backwards; animation-delay:calc(var(--n,0)*90ms + 250ms) }
+  #login .box > :nth-child(1){--n:0} #login .box > :nth-child(2){--n:1} #login .box > :nth-child(3){--n:2}
+  #login .box > :nth-child(4){--n:3} #login .box > :nth-child(5){--n:4} #login .box > :nth-child(6){--n:5}
+  @keyframes navRise{ from{ translate:0 120%; opacity:0 } to{ translate:0 0; opacity:1 } }
+  @keyframes headDrop{ from{ translate:0 -24px; opacity:0 } to{ translate:0 0; opacity:1 } }
+  html:not([data-fx="lite"]) nav{ animation:navRise .5s var(--ease-out) backwards }
+  html:not([data-fx="lite"]) header{ animation:headDrop .45s var(--ease-out) backwards }
+
+  /* ---------- entrada das telas: a tela aparece e os blocos sobem em cascata ----------
+     .cine-stage é posta pelo fx.js na tela recém-aberta por ~1,7s (e tirada depois), com --n
+     = posição do bloco. Assim a cascata toca só na ENTRADA e nunca de novo quando o conteúdo
+     é redesenhado (ex.: a cada batida da sala). */
+  @keyframes cineSection{ from{ opacity:0 } to{ opacity:1 } }
+  html:not([data-fx="lite"]) main section:not(.hide){ animation:cineSection .4s ease backwards }
+  html:not([data-fx="lite"]) .cine-stage > *:not(.hide){ animation:cineChild .85s var(--ease-out) backwards; animation-delay:calc(var(--n,0)*70ms) }
+  /* barras crescem do zero na entrada */
+  @keyframes barGrowY{ from{ transform:scaleY(0) } to{ transform:scaleY(1) } }
+  @keyframes barGrowX{ from{ transform:scaleX(0) } to{ transform:scaleX(1) } }
+  html:not([data-fx="lite"]) .cine-stage .bars .stack{ transform-origin:50% 100%; animation:barGrowY .95s var(--ease-out) backwards }
+  html:not([data-fx="lite"]) .cine-stage .bars .col:nth-child(2) .stack{ animation-delay:.05s }
+  html:not([data-fx="lite"]) .cine-stage .bars .col:nth-child(3) .stack{ animation-delay:.10s }
+  html:not([data-fx="lite"]) .cine-stage .bars .col:nth-child(4) .stack{ animation-delay:.15s }
+  html:not([data-fx="lite"]) .cine-stage .bars .col:nth-child(5) .stack{ animation-delay:.20s }
+  html:not([data-fx="lite"]) .cine-stage .bars .col:nth-child(6) .stack{ animation-delay:.25s }
+  html:not([data-fx="lite"]) .cine-stage .bars .col:nth-child(7) .stack{ animation-delay:.30s }
+  html:not([data-fx="lite"]) .cine-stage :is(.insightTrack,.track) i{ transform-origin:0 50%; animation:barGrowX .95s var(--ease-out) .2s backwards }
+
+  /* ---------- revelar ao rolar (só onde o navegador sabe; os outros ficam como estavam) ----------
+     Presa à posição da rolagem, não ao relógio: redesenhar a lista não refaz a animação.
+     Usa translate/scale (e não transform) pra não brigar com o "levantar" do hover. */
+  @supports (animation-timeline:view()){
+    html:not([data-fx="lite"]) :is(.member,.tdRow,.tdFriend,.tdHero,.logRow,.qCard,.recordCard,.hxKpi,.hxCard,.wkCard,.streakCard,.panelCard,.dayRecapCard,.insightSuggestion,.syncPanel,.notifBox,.planComposer,.rowBtn,button.weekrow):not(section > *){
+      animation:scrollReveal linear both; animation-timeline:view(); animation-range:entry 0% entry 60% }
+  }
+  @keyframes scrollReveal{ from{ opacity:0; translate:0 28px; scale:.96 } to{ opacity:1; translate:0 0; scale:1 } }
+
+  /* ---------- reações dos botões ---------- */
+  /* gelatina: afunda rápido ao tocar e volta com um leve salto */
+  html:not([data-fx="lite"]) :is(.primary,.ghost,.round,.save,.chip,.microBtn,.qBtn,.qChip,.cChip,.pill,.act,.rowBtn,.qkBtn,.tdStyleBtn,.btnOutline,.quotesBtn,.composerAdd,.dayBtn,.bigSave,.roomChip,.rowbtn,.backBtn,.sheetClose,.wkArrow,.wkClose,.statsSubTab,.gbtn,.modes button,.tdSubTabs button,.hxSeg button,.composer button,.quickmsgs button,.yearNav button,.go){
+    transition:transform .5s var(--ease-spring),box-shadow .3s var(--ease-out),background-color .25s,border-color .25s,color .25s,opacity .15s }
+  html:not([data-fx="lite"]) :is(.primary,.ghost,.round,.save,.chip,.microBtn,.qBtn,.qChip,.cChip,.pill,.act,.rowBtn,.qkBtn,.tdStyleBtn,.btnOutline,.quotesBtn,.composerAdd,.dayBtn,.bigSave,.roomChip,.rowbtn,.backBtn,.sheetClose,.wkArrow,.wkClose,.statsSubTab,.gbtn,.modes button,.tdSubTabs button,.hxSeg button,.composer button,.quickmsgs button,.yearNav button,.go):active{
+    transform:scale(.93); transition-duration:.09s }
+  html:not([data-fx="lite"]) .gearBtn:active{ transform:rotate(70deg) scale(.92) }
+  html:not([data-fx="lite"]) button.weekrow:active{ transform:scale(.985) }
+  /* botões principais: brilho que atravessa de tempos em tempos */
+  .primary, .bigSave{ position:relative; overflow:hidden }
+  html:not([data-fx="lite"]) :is(.primary,.bigSave)::after{ content:""; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(110deg,transparent 36%,rgba(255,255,255,.45) 50%,transparent 64%);
+    translate:-130% 0; animation:shine 6.5s ease-in-out 1.2s infinite }
+  @keyframes shine{ 0%,62%{ translate:-130% 0 } 100%{ translate:130% 0 } }
+  /* onda no ponto do toque (criada pelo fx.js) e partículas */
+  .fx-rip{ position:absolute; border-radius:50%; pointer-events:none; background:currentColor; opacity:0;
+    transform:scale(0); animation:fxRipple .75s var(--ease-out) forwards }
+  @keyframes fxRipple{ 0%{ transform:scale(0); opacity:.32 } 60%{ opacity:.14 } 100%{ transform:scale(1); opacity:0 } }
+  .fx-p{ position:fixed; left:0; top:0; width:8px; height:8px; pointer-events:none; z-index:300; will-change:transform,opacity }
+  /* aba selecionada: o ícone "pula" */
+  @keyframes navPop{ 0%{ transform:scale(.7) translateY(4px) } 55%{ transform:scale(1.34) translateY(-5px) } 100%{ transform:scale(1.14) translateY(-1px) } }
+  html:not([data-fx="lite"]) nav button.on::before{ animation:navPop .6s var(--ease-spring) }
+  /* quem tem mouse: levanta e brilha ao passar */
+  @media (hover:hover){
+    html:not([data-fx="lite"]) :is(.primary,.save,.bigSave,.composerAdd,.rowbtn,.wrappedRow button):hover{ transform:translateY(-2px) scale(1.03); opacity:1 }
+    html:not([data-fx="lite"]) .primary:hover{ box-shadow:0 12px 32px rgba(47,217,238,.5) }
+    html:not([data-fx="lite"]) .primary.roomtone:hover{ box-shadow:0 12px 32px rgba(34,211,166,.5) }
+    html:not([data-fx="lite"]) :is(.ghost,.round,.chip,.microBtn,.qBtn,.qChip,.cChip,.pill,.act,.rowBtn,.qkBtn,.tdStyleBtn,.btnOutline,.dayBtn,.roomChip,.quotesBtn,.backBtn,.gbtn):hover{
+      transform:translateY(-2px); box-shadow:0 8px 22px rgba(0,0,0,.2); opacity:1 }
+    html:not([data-fx="lite"]) .gearBtn:hover{ transform:rotate(30deg) scale(1.1); opacity:1 }
+    html:not([data-fx="lite"]) :is(.qCard,.recordCard,.hxKpi,.streakCard,.panelCard,.syncPanel,button.weekrow){ transition:transform .4s var(--ease-out),box-shadow .4s var(--ease-out),background .15s }
+    html:not([data-fx="lite"]) :is(.qCard,.recordCard,.hxKpi,.streakCard,.panelCard,.syncPanel,button.weekrow):hover{ transform:translateY(-3px); box-shadow:0 16px 36px rgba(0,0,0,.22) }
+    /* os "ativar" depois dos "passar" pra o toque ganhar do hover (mesma especificidade, vem depois) */
+    html:not([data-fx="lite"]) button.weekrow:active{ transform:scale(.985) }
+    html:not([data-fx="lite"]) .gearBtn:active{ transform:rotate(70deg) scale(.92) }
+    html:not([data-fx="lite"]) :is(.primary,.save,.bigSave,.composerAdd,.rowbtn,.wrappedRow button,.ghost,.round,.chip,.microBtn,.qBtn,.qChip,.cChip,.pill,.act,.rowBtn,.qkBtn,.tdStyleBtn,.btnOutline,.dayBtn,.roomChip,.quotesBtn,.backBtn,.gbtn):active{ transform:scale(.93) }
+  }
+
+  /* ---------- cronômetro rodando: o anel respira e um brilho percorre o círculo ---------- */
+  @keyframes ringBreath{ 0%,100%{ opacity:.55; transform:scale(.94) } 50%{ opacity:1; transform:scale(1.14) } }
+  @keyframes ringComet{ to{ transform:rotate(360deg) } }
+  html:not([data-fx="lite"]) body.timerRunning .ring::before{ animation:ringBreath 3.6s ease-in-out infinite }
+  html:not([data-fx="lite"]) body.timerRunning .ring::after{ content:""; position:absolute; inset:0; border-radius:50%; pointer-events:none;
+    background:conic-gradient(from 0deg,transparent 0 68%,rgba(255,255,255,.95) 100%);
+    -webkit-mask:radial-gradient(closest-side,transparent 86.5%,#000 88.5%,#000 91.5%,transparent 93.5%);
+            mask:radial-gradient(closest-side,transparent 86.5%,#000 88.5%,#000 91.5%,transparent 93.5%);
+    animation:ringComet 4.8s linear infinite }
+  html:not([data-fx="lite"]) body.timerRunning.onBreak .ring::before{ background:radial-gradient(circle,rgba(34,211,166,.22),transparent 70%) }
+
+
+  /* ---------- com papel de parede: texto solto ganha "material" (vidro) atrás ----------
+     Sombra sozinha não garante contraste em trechos claros da foto; uma placa de vidro garante.
+     Cartões e botões já eram de vidro; aqui entram os textos que ficavam direto sobre a imagem. */
+  body.haswall header{ background:var(--navbg); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    border-bottom:1.5px solid var(--border); box-shadow:0 6px 24px rgba(0,0,0,.2) }
+  body.haswall :is(.sechead,.code,.danger,.kicker){ width:fit-content; max-width:100%; padding:5px 13px; border-radius:999px;
+    background:var(--solid); border:1.5px solid var(--border); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px) }
+  body.haswall .phase{ width:fit-content; margin-inline:auto; padding:5px 14px; border-radius:999px;
+    background:var(--solid); border:1.5px solid var(--border); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px) }
+  body.haswall .ring::before{ inset:5%; filter:none; background:var(--surface); border:1.5px solid var(--border);
+    backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px) }
+  body.haswall .streakBadge{ background:linear-gradient(rgba(245,185,61,.20),rgba(245,185,61,.20)),var(--solid) }
+  body.haswall #login .box{ background:var(--surface); border:1.5px solid var(--border); border-radius:24px; padding:28px 22px;
+    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); box-shadow:var(--glow) }
+  html:not([data-fx="lite"]) body.haswall.timerRunning .ring::before{ animation:none }
+  /* foto escura = texto claro: escurece de leve os trechos brancos da foto (só filtro, a foto original não muda) */
+  body.haswall:not([data-contrast="light"]) #wallpaper{ filter:brightness(.74) }
+  body.haswall .muted:not(:is(.panelCard,.tSec,.member,.notifBox,.qCard,.streakCard,.syncPanel,.modalBox,.sheetBox,.wkCard,.hxCard,.insightSuggestion,.rowBtn,.qHero) .muted){
+    padding:8px 12px; border-radius:14px; background:var(--surface2); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px) }
+
+  /* ---------- avisos e janelas com mola ---------- */
+  .toast{ transform:translateX(-50%) translateY(18px) scale(.92); transition:opacity .25s,transform .5s var(--ease-spring) }
+  .toast.on{ transform:translateX(-50%) translateY(0) scale(1) }
+  .msgPop{ transition:opacity .25s,transform .55s var(--ease-spring) }
+  .modalWrap{ backdrop-filter:blur(8px) saturate(1.2); -webkit-backdrop-filter:blur(8px) saturate(1.2) }
+  html:not([data-fx="lite"]) .modalBox, html:not([data-fx="lite"]) .sheetBox{ animation:modalIn .55s var(--ease-spring) }
+
+
+
+  /* =====================================================================
+     2.14 — CONFORTO: paletas suaves, tamanho do texto, "sem animações", barra rápida,
+     painel de constância, respiração guiada e reflexão. Tudo opcional e só neste aparelho.
+     ===================================================================== */
+  /* Paletas suaves: mudam só o FUNDO e os preenchimentos (--c-*), para cansar menos a vista.
+     A "tinta" do texto (--i-*) e o contraste (WCAG AA) continuam os da v2.12. */
+  :root[data-palette="bruma"]{ --pbg-d:linear-gradient(160deg,#0D1418 0%,#15202A 45%,#1A2530 100%); --pbg-l:linear-gradient(160deg,#F3F6F8 0%,#E8EEF3 50%,#EEF1F6 100%);
+    --c-timer:#82C9D8; --c-stats:#ABA7DB; --c-room:#88CEB5; --c-settings:#E3C487; --c-tada:#E69DB2; --c-quotes:#E9B08A;
+    --aur1:rgba(130,201,216,.10); --aur2:rgba(171,167,219,.10); --aur3:rgba(230,157,178,.08); --aur4:rgba(136,206,181,.08) }
+  :root[data-palette="musgo"]{ --pbg-d:linear-gradient(160deg,#0E1511 0%,#16211B 45%,#1B261F 100%); --pbg-l:linear-gradient(160deg,#F2F6F0 0%,#E7EFE5 50%,#EFF2E9 100%);
+    --c-timer:#8ECDC5; --c-stats:#B5ABD8; --c-room:#95D0A9; --c-settings:#DDC98B; --c-tada:#DDA5AA; --c-quotes:#E2B58C;
+    --aur1:rgba(142,205,197,.10); --aur2:rgba(181,171,216,.09); --aur3:rgba(221,165,170,.07); --aur4:rgba(149,208,169,.10) }
+  :root[data-palette="areia"]{ --pbg-d:linear-gradient(160deg,#16130F 0%,#211C16 45%,#2A221A 100%); --pbg-l:linear-gradient(160deg,#FAF6EF 0%,#F3ECE0 50%,#F8F1E6 100%);
+    --c-timer:#91C5C9; --c-stats:#BDAACF; --c-room:#9ECAA7; --c-settings:#E4BE7C; --c-tada:#E19BA1; --c-quotes:#E7AA7F;
+    --aur1:rgba(145,197,201,.08); --aur2:rgba(189,170,207,.08); --aur3:rgba(225,155,161,.08); --aur4:rgba(228,190,124,.09) }
+  :root[data-palette="lavanda"]{ --pbg-d:linear-gradient(160deg,#121120 0%,#1B192C 45%,#231E32 100%); --pbg-l:linear-gradient(160deg,#F6F4FB 0%,#EEEAF6 50%,#F5F0F7 100%);
+    --c-timer:#8FC6DC; --c-stats:#B9A9E2; --c-room:#90CDB8; --c-settings:#E2C58B; --c-tada:#E3A0BA; --c-quotes:#E6B097;
+    --aur1:rgba(143,198,220,.09); --aur2:rgba(185,169,226,.12); --aur3:rgba(227,160,186,.08); --aur4:rgba(144,205,184,.08) }
+  :root[data-palette]:not([data-palette="padrao"]){ --bg-grad:var(--pbg-d) }
+  :root[data-palette]:not([data-palette="padrao"])[data-theme="light"]{ --bg-grad:var(--pbg-l) }
+  @media (prefers-color-scheme:light){ :root[data-palette]:not([data-palette="padrao"])[data-theme="system"]{ --bg-grad:var(--pbg-l) } }
+
+  /* Tamanho do texto (A− / A+): amplia a interface toda. Se o navegador não tiver "zoom", nada muda. */
+  html[data-tscale="1"]{--tz:1.1} html[data-tscale="2"]{--tz:1.2} html[data-tscale="3"]{--tz:1.35} html[data-tscale="4"]{--tz:1.5}
+  html[data-tscale] body{ zoom:var(--tz); min-height:calc(100dvh / var(--tz)) }
+
+  /* "Sem animações": o mesmo efeito do "reduzir movimento" do sistema, mas ligado por um botão no app */
+  html[data-motion="off"] *, html[data-motion="off"] *::before, html[data-motion="off"] *::after{
+    animation:none !important; transition:none !important; scroll-behavior:auto !important }
+
+  /* Barra de conforto (tela principal) */
+  .quickBar{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:0 0 14px}
+  .quickBar button{min-height:40px;padding:8px 13px;border-radius:999px;border:1px solid var(--border);background:var(--surface);
+    color:var(--text);font:inherit;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+  .quickBar button[aria-pressed="true"]{border-color:var(--i-timer);box-shadow:0 0 0 2px color-mix(in srgb,var(--i-timer) 35%,transparent)}
+  .quickBar button:disabled{opacity:.5;cursor:default}
+  .palModes{flex-wrap:wrap;border-radius:18px}
+  .palModes button{display:flex;align-items:center;justify-content:center;gap:8px;min-width:46%}
+  .palDot{width:14px;height:14px;border-radius:50%;border:1px solid var(--border);display:inline-block}
+
+  /* Painel de constância */
+  .consCard{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px;margin:0 0 18px}
+  .consCard h3{margin:0 0 4px;font-family:var(--head);font-weight:400;font-size:19px}
+  .consBig{font-size:15px;margin:6px 0 12px;line-height:1.45}
+  .consGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;max-width:320px;margin:0 auto 6px}
+  .consDay{aspect-ratio:1;border-radius:8px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--muted)}
+  .consDay.l1{background:color-mix(in srgb,var(--c-stats) 30%,transparent)}
+  .consDay.l2{background:color-mix(in srgb,var(--c-stats) 55%,transparent)}
+  .consDay.l3{background:color-mix(in srgb,var(--c-stats) 80%,transparent);color:var(--on-fill)}
+  .consDay.today{outline:2px solid var(--i-stats);outline-offset:1px}
+  .consWeeks{display:flex;align-items:flex-end;gap:8px;height:84px;margin:10px 0 4px}
+  .consWeek{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;height:100%}
+  .consWeek i{display:block;width:100%;border-radius:6px 6px 3px 3px;background:var(--c-stats);min-height:3px}
+  .consWeek small{font-size:10px;color:var(--muted)}
+  .consNote{margin:10px 0 0;font-size:12.5px;color:var(--muted);line-height:1.5}
+
+  /* Pausa consciente (respiração guiada) — desligada por padrão, ligue em Ajustes */
+  .breathCard{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:18px;margin:0 0 16px;text-align:center}
+  .breathStage{height:150px;display:flex;align-items:center;justify-content:center}
+  .breathDot{width:80px;height:80px;border-radius:50%;background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--c-room) 90%,#fff),var(--c-room));
+    box-shadow:0 0 38px color-mix(in srgb,var(--c-room) 45%,transparent);animation:breathe 10s ease-in-out infinite}
+  @keyframes breathe{0%{transform:scale(.8)}40%{transform:scale(1.55)}100%{transform:scale(.8)}}
+  html[data-fx="lite"] .breathDot, html[data-motion="reduced"] .breathDot, html[data-motion="off"] .breathDot{animation:none;transform:scale(1.1)}
+  @media (prefers-reduced-motion:reduce){ .breathDot{animation:none;transform:scale(1.1)} }
+  .breathCue{font-family:var(--head);font-size:22px;margin:4px 0 2px;min-height:30px}
+  .breathAsk{font-size:14px;color:var(--muted);margin:6px 0 12px;line-height:1.5}
+  .breathBtns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+
+  /* Reflexão pós-ciclo (chips de começo de frase) */
+  .reflChips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 10px}
+  .reflChips button{border:1px solid var(--border);background:var(--surface2);color:var(--text);border-radius:999px;padding:7px 12px;font:inherit;font-size:12.5px;cursor:pointer;min-height:36px}
+  .reflHint{font-size:12.5px;color:var(--muted);margin:0 0 10px}
+
+  /* ---------- Desempenho (2.16) ----------
+     backdrop-filter (o desfoque do vidro) é o que mais pesa na rolagem: cada cartão desfoca o que está por
+     trás a cada quadro. Sem papel de parede, o fundo é um gradiente liso e o desfoque quase não muda nada
+     na tela — então tiramos dos cartões. Cabeçalho, barra de abas e janelas mantêm o desfoque (texto por
+     trás precisa de contraste). Com papel de parede, os cartões continuam com desfoque. */
+  body:not(.haswall) .rowBtn, body:not(.haswall) .chip, body:not(.haswall) .ghost, body:not(.haswall) .round,
+  body:not(.haswall) .notifBox, body:not(.haswall) .streakCard, body:not(.haswall) .insightSuggestion,
+  body:not(.haswall) .qCard, body:not(.haswall) .panelCard, body:not(.haswall) .planComposer,
+  body:not(.haswall) .syncPanel, body:not(.haswall) .member, body:not(.haswall) .recordCard,
+  body:not(.haswall) .quickBar button, body:not(.haswall) .consWeeks{
+    -webkit-backdrop-filter:none; backdrop-filter:none }
+  /* celular: os cartões que mais se repetem na rolagem perdem o desfoque também com papel de parede */
+  @media (max-width:820px){
+    body .chip, body .rowBtn, body .member, body .recordCard, body .qCard, body .panelCard{ -webkit-backdrop-filter:none; backdrop-filter:none }
+  }
+
+  /* ---------- Experiência (2.17) ---------- */
+  /* Ampulheta fluida: a água sobe com o tempo. Os números somem (continuam para leitores de tela). */
+  .hgFill{position:absolute;inset:4%;border-radius:50%;overflow:hidden;display:none;pointer-events:none;z-index:0}
+  html[data-hourglass="on"] .hgFill{display:block}
+  html[data-hourglass="on"] .ring .time{opacity:0}
+  html[data-hourglass="on"] .ring .time{transition:opacity .4s}
+  .ring > svg{position:relative;z-index:1}
+  .ring .hgWave{position:absolute;left:0;top:-14px;width:200%;height:16px;transform:none}
+  .hgWater{position:absolute;left:0;right:0;bottom:0;height:calc(var(--hg,0) * 100%);transition:height 1s linear;
+    background:linear-gradient(180deg,color-mix(in srgb,var(--i-timer) 28%,transparent),color-mix(in srgb,var(--i-timer) 50%,transparent))}
+  .hgWave{position:absolute;left:0;top:-14px;width:200%;height:16px;opacity:min(1,calc(var(--hg,0) * 60));animation:hgWave 6s linear infinite}
+  .hgWave path{fill:color-mix(in srgb,var(--i-timer) 50%,transparent)}
+  @keyframes hgWave{to{transform:translateX(-50%)}}
+  html[data-fx="lite"] .hgWave{animation:none}
+  /* ---------- Tela de foco (2.18) ----------
+     Vale SÓ na aba do cronômetro (html[data-view="timer"]) e só com a opção ligada. A barra de abas fica
+     sempre visível: assim nunca dá para "ficar preso". "⋯ Mais" abre o cabeçalho e os menus NO FLUXO da
+     página (nada flutuando por cima de botões); o "✕" para fechar fica dentro do cabeçalho. */
+  .focusMore, .focusLess, .focusInfo{display:none}
+  .focusMore{position:fixed;top:calc(env(safe-area-inset-top,0px) + 10px);right:12px;z-index:30;padding:9px 16px;border-radius:999px;
+    border:1px solid var(--border);background:var(--panel);color:var(--text);font-size:13px;cursor:pointer}
+  html[data-focus="min"][data-view="timer"]:not([data-more]) .focusMore{display:block}
+  html[data-focus="min"][data-view="timer"][data-more] .focusLess{display:inline-flex}
+  html[data-focus="min"][data-view="timer"]:not([data-more]) :is(#appHeader,#fabDock,#ambientPanel){display:none !important}
+  html[data-focus="min"][data-view="timer"]:not([data-more]) #view-timer :is(.quickBar,#subjectChips,.modes,.microRow,.dumpBox,.divider,.dayRecapCard,#phaseLabel){display:none !important}
+  html[data-focus="min"][data-view="timer"]:not([data-more]) main{padding-top:clamp(56px,11vh,130px)}
+  html[data-focus="min"][data-view="timer"]:not([data-more]) .focusInfo{display:block;text-align:center}
+  .focusTask{margin:0 0 6px;font-size:17px;font-weight:600;letter-spacing:.2px}
+  .focusNext{margin:14px 0 0;font-size:13px;color:var(--muted)}
+  @media(max-width:480px){ html[data-focus="min"][data-view="timer"][data-more] #meName{display:none} }
+
+  /* ---------- Visuais (2.18): só largura, tamanho do anel e área de toque; a estrutura é a mesma ---------- */
+  .uxLayouts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .uxLayout{padding:12px 10px;border-radius:14px;border:1px solid var(--border);background:var(--surface);color:var(--text);
+    font-size:13px;font-weight:600;cursor:pointer;text-align:center}
+  .uxLayout.on{border-color:var(--i-timer);background:color-mix(in srgb,var(--i-timer) 18%,transparent)}
+  html[data-layout="celular"] main{max-width:440px}
+  html[data-layout="celular"] .ring{width:min(212px,62vw)}
+  html[data-layout="celular"] .ring .time{font-size:clamp(30px,9vw,40px)}
+  html[data-layout="celular"] :is(.primary,.ghost){min-height:44px}
+  html[data-layout="tablet"] main{max-width:800px;padding-left:32px;padding-right:32px}
+  html[data-layout="computador"] main{max-width:1180px;padding-left:40px;padding-right:40px}
+  html[data-layout="computador"] #view-timer{max-width:760px;margin-left:auto;margin-right:auto}
+  html[data-layout="computador"] .ring{width:min(300px,26vw)}
+  html[data-layout="computador"] .ring .time{font-size:clamp(40px,3.2vw,56px)}
+
+  /* ---------- Atalhos 🧰 (2.18): revisão, conquistas e sons num só lugar, recolhidos ---------- */
+  #fabDock{position:fixed;right:12px;bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:35;display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+  .fabList{display:flex;flex-direction:column;gap:8px}
+  .fabList[hidden]{display:none}
+  #fabToggle, .fabItem{width:42px;height:42px;padding:0;border-radius:50%;border:1px solid var(--border);background:var(--panel);
+    color:var(--text);font-size:17px;line-height:1;cursor:pointer;display:grid;place-items:center;box-shadow:0 4px 14px rgba(0,0,0,.28)}
+  #fabToggle{opacity:.85;font-size:18px}
+  html[data-view="settings"] #fabDock, html[data-view="quotes"] #fabDock, html[data-view="settings"] #ambientPanel{display:none !important}
+  .fabReview{background:#7C5CFA;border-color:transparent;color:#fff}
+  .fabAch{background:#D8AD4E;border-color:transparent;color:#11141C}
+  #ambientPanel{position:fixed;right:64px;bottom:calc(92px + env(safe-area-inset-bottom,0px));z-index:36;width:min(260px,calc(100vw - 84px));
+    max-height:60vh;overflow:auto;box-sizing:border-box;padding:14px;border-radius:18px;border:1px solid var(--border);background:var(--panel);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  #ambientPanel.hide{display:none}
+  .ambOpt.on{border-color:var(--i-timer) !important;box-shadow:0 0 0 2px color-mix(in srgb,var(--i-timer) 30%,transparent)}
+  #ambientPanel input[type=range]{accent-color:var(--i-timer)}
+
+  /* ---------- Acessibilidade (2.13) ---------- */
+  .sr-only{position:absolute !important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+  .skipLink{position:fixed;left:12px;top:-60px;z-index:400;background:#F3F6FB;color:#0A1018;padding:10px 16px;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;transition:top .15s}
+  .skipLink:focus{top:calc(env(safe-area-inset-top) + 10px)}
+  [role="button"]:not(button):focus-visible, section[tabindex="-1"]:focus-visible{ outline:2px solid var(--i-timer); outline-offset:2px }
+  section[tabindex="-1"]:focus, main[tabindex="-1"]:focus{ outline:none }
+  @media (forced-colors:active){ button, .chip, .pill, header, nav{ border:1px solid ButtonText } }
+  /* a pessoa pediu "reduzir movimento": nada de rolagem suave nem de transições em elementos fixos */
+  @media (prefers-reduced-motion:reduce){ .skipLink{transition:none} .toast, .msgPop{ transition:opacity .01s !important } }
+
+  /* "reduzir movimento" do sistema: a regra antiga (acima) não alcança ::before/::after,
+     que o fundo vivo, o brilho dos botões e o anel usam — então fecha aqui também */
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{ animation:none !important; transition:none !important }
+    html{ scroll-behavior:auto }
+  }
+
+  /* =====================================================================
+     2.24 — Estatísticas em CARTÕES DE VIDRO TINGIDOS
+     Cada bloco é um cartão translúcido (o fundo/papel de parede aparece por baixo, desfocado) com a SUA cor
+     (--t) e um selo de ícone; números grandes com a unidade menor ao lado. Mesmos dados de antes, só o visual.
+     Cores: .t-cyan .t-violet .t-green .t-gold .t-rose .t-orange .t-blue — todas já existem no app (+ azul).
+     O fundo do cartão é "tinta por cima de var(--surface)": funciona no tema escuro, no claro e com foto.
+     ===================================================================== */
+  :root{--c-blue:#5B9DFF}
+  :root, body.haswall{--i-blue:#8DBBFF}
+  :root[data-theme="light"], body.haswall[data-contrast="light"]{--i-blue:#1D55C7}
+  @media (prefers-color-scheme:light){:root[data-theme="system"]{--i-blue:#1D55C7}}
+
+  .gCard{--t:var(--c-stats);--ti:var(--i-stats);position:relative;min-width:0;margin:0 0 14px;padding:16px 18px;border-radius:26px;
+    background:linear-gradient(150deg,color-mix(in srgb,var(--t) 34%,transparent) 0%,color-mix(in srgb,var(--t) 12%,transparent) 100%),var(--surface);
+    border:1px solid color-mix(in srgb,var(--t) 46%,var(--border));
+    box-shadow:0 12px 30px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.10);
+    backdrop-filter:blur(16px) saturate(1.25);-webkit-backdrop-filter:blur(16px) saturate(1.25)}
+  .gCard.t-cyan{--t:var(--c-timer);--ti:var(--i-timer)}
+  .gCard.t-violet{--t:var(--c-stats);--ti:var(--i-stats)}
+  .gCard.t-green{--t:var(--c-room);--ti:var(--i-room)}
+  .gCard.t-gold{--t:var(--c-settings);--ti:var(--i-settings)}
+  .gCard.t-rose{--t:var(--c-tada);--ti:var(--i-tada)}
+  .gCard.t-orange{--t:var(--c-quotes);--ti:var(--i-quotes)}
+  .gCard.t-blue{--t:var(--c-blue);--ti:var(--i-blue)}
+  :root[data-theme="light"] .gCard{box-shadow:0 10px 26px rgba(60,80,150,.14),inset 0 1px 0 rgba(255,255,255,.7)}
+  .gCard.gLong{backdrop-filter:none;-webkit-backdrop-filter:none}   /* lista longa: sem desfoque (pesa ao rolar) */
+
+  .gIco{display:grid;place-items:center;flex:0 0 auto;width:46px;height:46px;border-radius:15px;color:var(--ti);
+    background:color-mix(in srgb,var(--t) 20%,transparent);border:1.5px solid color-mix(in srgb,var(--t) 62%,transparent)}
+  .gIco svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .gHead{display:flex;align-items:center;gap:14px;margin:0 0 14px;min-width:0}
+  .gHead>div{min-width:0}
+  .gTitle{margin:0;font:700 18px/1.2 var(--body);color:var(--text)}
+  .gSub{margin:3px 0 0;font-size:13.5px;line-height:1.35;color:var(--muted)}
+  .gLabel{margin:4px 4px 10px;font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+  .gTop{display:flex;align-items:center;gap:10px;min-width:0}
+  .gReadout{margin:12px 0 0;min-height:22px;font-size:13.5px;line-height:1.5;color:var(--text)}
+  .gReadout b{font-weight:700}
+  .gReadout .pill{display:inline-flex;align-items:center;gap:6px;margin:6px 6px 0 0;padding:4px 11px;border-radius:999px;border:1px solid color-mix(in srgb,var(--t) 35%,var(--border));background:color-mix(in srgb,var(--t) 10%,transparent);font-size:12.5px}
+  .gReadout .pill i{width:8px;height:8px;border-radius:50%;flex:0 0 auto}
+
+  /* abas internas = cápsula de vidro com a ativa "levantada" */
+  .statsSubTabs{display:flex;gap:2px;padding:5px;margin-bottom:16px;border-radius:22px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    background:color-mix(in srgb,var(--c-stats) 10%,var(--surface2));border:1px solid color-mix(in srgb,var(--c-stats) 28%,var(--border))}
+  .statsSubTab{flex:1 1 auto;padding:11px 10px;border-radius:17px;font-weight:600;font-size:13.5px;letter-spacing:0;white-space:nowrap;min-width:0;text-align:center}
+  .statsSubTab.on{background:color-mix(in srgb,var(--c-stats) 28%,var(--surface));color:var(--text);box-shadow:0 2px 10px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.14)}
+
+  /* sequência */
+  .streakCard{display:flex;align-items:center;gap:14px;padding:16px 18px}
+  .streakCard .big{font-size:42px;line-height:1;font-weight:700;color:var(--ti);font-variant-numeric:tabular-nums}
+  .streakCard .txt{min-width:0}
+  .streakCard .txt p{margin:0;font-size:14.5px;font-weight:600;color:var(--text)}
+  .streakCard .txt .sub{margin-top:3px;font-size:12.5px;font-weight:400;color:var(--muted);line-height:1.4}
+
+  /* constância */
+  .consCard{padding:16px 18px 14px}
+  .consTop{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+  .consTop .gHead{margin:0;flex:1}
+  .consNum{flex:0 0 auto;text-align:right;line-height:1}
+  .consNum b{font-size:36px;font-weight:700;color:var(--ti);font-variant-numeric:tabular-nums}
+  .consNum span{font-size:18px;color:var(--muted)}
+  .consNum small{display:block;margin-top:6px;font-size:12.5px;color:var(--muted)}
+  .consSub{margin:0 0 14px;font-size:14px;line-height:1.5;color:var(--muted)}
+  .consGrid{max-width:none;gap:8px;margin:0 0 4px}
+  .consDay{aspect-ratio:1;display:flex;align-items:flex-start;justify-content:flex-start;padding:7px 0 0 8px;border-radius:14px;font:600 12px/1 var(--body);color:var(--muted);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:transform .15s,box-shadow .2s,background .2s;
+    background:color-mix(in srgb,var(--t) 10%,transparent);border:1px solid color-mix(in srgb,var(--t) 22%,var(--border))}
+  .consDay:active{transform:scale(.94)}
+  .consDay.l1{background:color-mix(in srgb,var(--c-timer) 30%,transparent);border-color:color-mix(in srgb,var(--c-timer) 55%,transparent);color:var(--text)}
+  .consDay.l2{background:color-mix(in srgb,var(--c-timer) 55%,transparent);border-color:color-mix(in srgb,var(--c-timer) 75%,transparent);color:var(--text)}
+  .consDay.l3{background:color-mix(in srgb,var(--c-timer) 82%,transparent);border-color:var(--c-timer);color:var(--on-fill)}
+  .consDay.today{outline:2px solid var(--i-timer);outline-offset:1px}
+  .consDay.sel{box-shadow:0 0 0 3px color-mix(in srgb,var(--ti) 70%,transparent)}
+  .consLegend{display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:10px;font-size:12.5px;color:var(--muted)}
+  .consLegend i{width:18px;height:18px;border-radius:6px;background:color-mix(in srgb,var(--t) 10%,transparent);border:1px solid color-mix(in srgb,var(--t) 24%,var(--border))}
+  .consLegend i.l1{background:color-mix(in srgb,var(--c-timer) 30%,transparent)}
+  .consLegend i.l2{background:color-mix(in srgb,var(--c-timer) 55%,transparent)}
+  .consLegend i.l3{background:color-mix(in srgb,var(--c-timer) 82%,transparent)}
+  .consNote{text-align:left;margin:8px 0 0;font-size:12.5px}
+
+  .wrappedRow{margin:0 0 14px}
+  .wrappedRow button{border-radius:22px;padding:15px 18px;font-size:15px;font-weight:700;box-shadow:0 10px 26px color-mix(in srgb,var(--c-timer) 28%,transparent)}
+
+  /* os 4 totais (hoje/semana/mês/ano) */
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 0 14px}
+  @media(min-width:560px){.stats{grid-template-columns:repeat(4,1fr)}}
+  .stat.gCard{margin:0;padding:14px 16px 16px;display:flex;flex-direction:column;gap:16px;min-height:122px}
+  .stat .gIco{width:36px;height:36px;border-radius:12px}
+  .stat .gIco svg{width:18px;height:18px}
+  .stat .gTop{gap:8px}
+  .stat .l,.recordCard .rl,.hxKpi .l{margin:0;font-size:13.5px;font-weight:600;line-height:1.2;color:var(--muted);text-transform:none;letter-spacing:.01em}
+  .stat .l::first-letter,.hxKpi .l::first-letter{text-transform:uppercase}
+  .stat .l{white-space:nowrap}
+  .stat .v{display:block;margin:auto 0 0;padding:0;border:0;white-space:nowrap;font-size:27px;font-weight:700;line-height:1.05;color:var(--text);font-variant-numeric:tabular-nums}
+  .stat .v i,.recordCard .rv i{font-style:normal;font-size:.5em;font-weight:600;color:var(--muted);margin-left:2px}
+
+  /* gráfico dos 7 dias e evolução por matéria */
+  .gCard .bars{height:176px;gap:10px;margin-top:4px}
+  button.col{background:none;border:0;padding:0;color:inherit;font:inherit;border-radius:12px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .2s}
+  button.col:hover{background:color-mix(in srgb,var(--t) 10%,transparent)}
+  .gCard .bars .stack{border-radius:10px 10px 4px 4px;background:color-mix(in srgb,var(--t) 12%,transparent);transition:box-shadow .25s,opacity .25s}
+  .bars button.col:not(.on) .stack{opacity:.72}
+  .bars button.col.on .stack{opacity:1;box-shadow:0 0 0 2px color-mix(in srgb,var(--ti) 75%,transparent),0 8px 20px color-mix(in srgb,var(--t) 38%,transparent)}
+  .bars button.col.on .lbl{color:var(--ti);font-weight:700}
+  .gCard .legend{margin:12px 0 0}
+
+  /* barras de horários / melhor dia / sala */
+  .gCard.insightBox{margin-top:0}
+  .gCard .insightRow{gap:12px;margin-bottom:12px;align-items:center}
+  .gCard .insightLbl{flex:0 0 150px;width:auto;font-size:13px;font-weight:600;line-height:1.25}
+  #weekdayBars .insightLbl{flex-basis:38px}
+  .gCard .insightVal{flex:0 0 auto;width:auto;white-space:nowrap;font-size:13.5px}
+  .gCard .insightTrack{flex:1 1 auto;min-width:40px}
+  .gCard .insightTrack{height:12px;background:color-mix(in srgb,var(--t) 14%,transparent)}
+  .gCard .insightTrack i{background:linear-gradient(90deg,color-mix(in srgb,var(--t) 55%,transparent),var(--t));border-radius:999px}
+  .gCard .insightSuggestion{margin-top:14px;border-radius:18px;background:color-mix(in srgb,var(--t) 10%,transparent);border:1px solid color-mix(in srgb,var(--t) 28%,var(--border));backdrop-filter:none}
+
+  /* catálogo semanal */
+  .gCard .yearNav{display:grid;grid-template-columns:48px 1fr 48px;gap:10px;align-items:center;margin:0 0 12px}
+  .gCard .yearNav button{width:auto;height:46px;border-radius:16px;font-size:22px;color:var(--text);background:color-mix(in srgb,var(--t) 12%,var(--surface2));border:1px solid color-mix(in srgb,var(--t) 36%,var(--border))}
+  .gCard .yearNav .y{display:flex;align-items:center;justify-content:center;height:46px;border-radius:16px;font:700 17px var(--body);background:var(--surface2);border:1px solid var(--border)}
+  .gCard .weekrow{margin:0 0 8px;padding:13px 14px;border-radius:20px;background:color-mix(in srgb,var(--t) 9%,transparent);border:1px solid color-mix(in srgb,var(--t) 24%,var(--border));transition:transform .15s,background .2s}
+  .gCard .weekrow{display:grid;grid-template-columns:minmax(0,1fr) 44px auto 8px;gap:10px;align-items:center}
+  .gCard .weekrow .range{font-size:13px;line-height:1.3}
+  .gCard .weekrow .total{white-space:nowrap;font-weight:700;font-size:13.5px;text-align:right}
+  .gCard .weekrow .mini{width:100%;min-width:0}
+  .gCard .weekrow:hover{background:color-mix(in srgb,var(--t) 16%,transparent)}
+  .gCard .weekrow:active{transform:scale(.985)}
+  .gCard .weekrow.current{background:color-mix(in srgb,var(--t) 26%,transparent);border-color:color-mix(in srgb,var(--t) 62%,transparent)}
+  .gCard .weekrow.current .range{color:var(--ti)}
+  .gCard .weekrow .mini{background:color-mix(in srgb,var(--t) 12%,transparent);box-shadow:none}
+
+  /* diário */
+  .gCard .logRow{border-bottom-color:color-mix(in srgb,var(--t) 20%,var(--border))}
+  .gCard .logRow:last-child{border-bottom:0}
+
+  /* recordes */
+  .recordGrid{gap:12px;margin:0 0 14px}
+  .recordCard.gCard{margin:0;padding:14px 16px 16px;display:flex;flex-direction:column;gap:14px}
+  .recordCard .gTop{flex-direction:column;align-items:flex-start;gap:10px}
+  .recordCard .gIco{width:38px;height:38px;border-radius:12px}
+  .recordCard .gIco svg{width:19px;height:19px}
+  .recordCard .rv{margin:auto 0 0;white-space:nowrap;font-size:25px;font-weight:700;line-height:1.1;color:var(--text);font-variant-numeric:tabular-nums}
+  .recordCard .rs{margin:-8px 0 0;font-size:12.5px;font-style:normal;color:var(--muted)}
+
+  /* frequência no último ano */
+  .gCard .heatmapWrap{padding-bottom:8px}
+  .hmCell{border-radius:3px;background:color-mix(in srgb,var(--t) 12%,transparent)}
+  .hmScale{margin-top:10px;font-size:11px}
+  .hmScale i{border-radius:3px;background:color-mix(in srgb,var(--t) 12%,transparent)}
+  .hmCell[data-lv="1"],.hmScale i[data-lv="1"]{background:rgba(34,211,166,.32)}
+  .hmCell[data-lv="2"],.hmScale i[data-lv="2"]{background:rgba(34,211,166,.54)}
+  .hmCell[data-lv="3"],.hmScale i[data-lv="3"]{background:rgba(34,211,166,.76)}
+  .hmCell[data-lv="4"],.hmScale i[data-lv="4"]{background:var(--c-room)}
+
+  /* horários (aba) */
+  .hxKpis{gap:12px}
+  .hxKpi.gCard{margin:0;padding:14px 16px 16px;display:flex;flex-direction:column;gap:14px}
+  .hxKpi .gIco{width:38px;height:38px;border-radius:12px}
+  .hxKpi .gIco svg{width:18px;height:18px}
+  .hxKpi .v{margin:auto 0 0;white-space:nowrap;font-size:20px;font-weight:700;line-height:1.15;color:var(--text)}
+  .hxCard.gCard{padding:16px 16px 14px}
+  .hxCard .hxSeg{border-radius:14px;background:color-mix(in srgb,var(--t) 10%,var(--surface2));border-color:color-mix(in srgb,var(--t) 28%,var(--border))}
+  .hxCard .hxSeg button{border-radius:10px}
+  .hxCard .hxSeg button.on{background:color-mix(in srgb,var(--t) 30%,var(--surface))}
+  .hx{gap:14px}
+
+  /* entrada em cascata dos cartões (CSS puro: recomeça sempre que a aba/sub-aba é aberta; só no modo completo) */
+  @keyframes gUp{from{opacity:0;transform:translateY(16px) scale(.985)}to{opacity:1;transform:none}}
+  html[data-motion="full"]:not([data-fx="lite"]) #view-stats :is(#statsSummary,#statsHistory,#statsHours,#statsDeep,#statsHours .hx):not(.hide)>*{
+    animation:gUp .5s var(--ease-fluid) both;animation-delay:calc(var(--gi,0)*45ms)}
+  #view-stats :is(#statsSummary,#statsHistory,#statsHours,#statsDeep,.hx)>:nth-child(2){--gi:1}
+  #view-stats :is(#statsSummary,#statsHistory,#statsHours,#statsDeep,.hx)>:nth-child(3){--gi:2}
+  #view-stats :is(#statsSummary,#statsHistory,#statsHours,#statsDeep,.hx)>:nth-child(4){--gi:3}
+  #view-stats :is(#statsSummary,#statsHistory,#statsHours,#statsDeep,.hx)>:nth-child(5){--gi:4}
+  #view-stats :is(#statsSummary,#statsHistory,#statsHours,#statsDeep,.hx)>:nth-child(6){--gi:5}
+  #view-stats :is(#statsSummary,#statsHistory,#statsHours,#statsDeep,.hx)>:nth-child(n+7){--gi:6}
+
+  /* =====================================================================
+     2.25 — ALTO CONTRASTE (Ajustes → Aparência; segue "prefers-contrast: more" se a pessoa não escolheu)
+     Fundo sólido, texto no máximo contraste, bordas firmes, sem vidro/transparência, sem papel de parede
+     nem fundo animado, foco de teclado grosso. Vale para o tema escuro e para o claro.
+     ===================================================================== */
+  :root[data-hc="on"]{
+    --bg-grad:#000; --panel:#000; --surface:#0A0A0A; --surface2:#141414; --border:#FFFFFF; --text:#FFFFFF; --muted:#E8E8E8;
+    --navbg:#000; --headbg:#000; --solid:#000; --tshadow:none; --glow:none; --danger:#FF8A80;
+    --i-timer:#5CE8FF; --i-stats:#D4C8FF; --i-room:#5CFFD0; --i-settings:#FFD866; --i-tada:#FFA6C4; --i-quotes:#FFBE8A;
+    --i-good:#5CFFD0; --i-warn:#FFD866; --i-danger:#FFA39B; --i-blue:#9CC2FF; --on-fill:#000;
+  }
+  :root[data-hc="on"][data-theme="light"]{
+    --bg-grad:#fff; --panel:#fff; --surface:#FFFFFF; --surface2:#F0F0F0; --border:#000; --text:#000; --muted:#1A1A1A;
+    --navbg:#fff; --headbg:#fff; --solid:#fff; --danger:#8A0000; --on-fill:#fff;
+    --i-timer:#00425C; --i-stats:#32119E; --i-room:#00452E; --i-settings:#5C2F00; --i-tada:#8A0036; --i-quotes:#6E1F00;
+    --i-good:#00452E; --i-warn:#5C3400; --i-danger:#8A0000; --i-blue:#0B3A94;
+  }
+  @media (prefers-color-scheme:light){
+    :root[data-hc="on"][data-theme="system"]{
+      --bg-grad:#fff; --panel:#fff; --surface:#FFFFFF; --surface2:#F0F0F0; --border:#000; --text:#000; --muted:#1A1A1A;
+      --navbg:#fff; --headbg:#fff; --solid:#fff; --danger:#8A0000; --on-fill:#fff;
+      --i-timer:#00425C; --i-stats:#32119E; --i-room:#00452E; --i-settings:#5C2F00; --i-tada:#8A0036; --i-quotes:#6E1F00;
+      --i-good:#00452E; --i-warn:#5C3400; --i-danger:#8A0000; --i-blue:#0B3A94;
+    }
+  }
+  :root[data-hc="on"] *, :root[data-hc="on"] *::before, :root[data-hc="on"] *::after{
+    backdrop-filter:none !important; -webkit-backdrop-filter:none !important; text-shadow:none !important }
+  :root[data-hc="on"] body::before, :root[data-hc="on"] #wallpaper, :root[data-hc="on"] #wallShade{ display:none !important }
+  :root[data-hc="on"] .gCard, :root[data-hc="on"] .ghost, :root[data-hc="on"] .chip, :root[data-hc="on"] .notifBox,
+  :root[data-hc="on"] input.f, :root[data-hc="on"] textarea.f, :root[data-hc="on"] select.f{ background:var(--surface); border:2px solid var(--border) }
+  :root[data-hc="on"] a{ text-decoration:underline }
+  :root[data-hc="on"] :focus-visible{ outline:3px solid var(--i-settings); outline-offset:3px }
+  :root[data-hc="on"] .slider{ background:#6B6B6B; border:2px solid var(--border) }
+</style>
+</head>
+<body>
+<div id="wallpaper" aria-hidden="true"></div>
+<div id="wallShade" aria-hidden="true"></div>
+
+<section id="splash">
+  <h1>Juntos</h1>
+  <div class="spinner"></div>
+</section>
+
+<section id="login" class="hide">
+  <div class="box">
+    <p class="kicker">um lugar para estudar</p>
+    <h1 class="brand">Juntos</h1>
+    <p class="lede">Registre suas horas de estudo, individualmente ou em companhia de quem você convidar. Entre com sua conta Google para começar.</p>
+    <button class="gbtn" id="googleBtn">
+      <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.6 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.8 6.1C12.3 13.2 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.2-.4-4.7H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.3z"/><path fill="#FBBC05" d="M10.4 28.7c-.5-1.5-.8-3-.8-4.7s.3-3.2.8-4.7l-7.8-6.1C1 16.4 0 20.1 0 24s1 7.6 2.6 10.8l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.8 2.3-8.4 2.3-6.3 0-11.7-3.7-13.6-9.1l-7.8 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
+      Entrar com Google
+    </button>
+    <p class="fineprint" id="loginNote">Você só precisa fazer isso uma vez neste aparelho — depois o app abre direto.</p>
+    <p class="fineprint">Ao entrar você poderá revisar e aceitar os <a href="termos.html" target="_blank" rel="noopener noreferrer">Termos de Serviço</a> e a <a href="privacidade.html" target="_blank" rel="noopener noreferrer">Política de Privacidade</a>.</p>
+  </div>
+</section>
+
+<header class="hide" id="appHeader">
+  <div class="brandwrap"><p>um lugar para estudar</p><h1>Juntos</h1></div>
+  <div class="me">
+    <span class="streakBadge hide" id="headerStreak"></span>
+    <span class="avatarWrap" id="meAvatarWrap"></span>
+    <span id="meName"></span>
+    <button class="gearBtn quotesBtn" id="quotesBtn" aria-label="Abrir frases" title="Frases">💡</button>
+    <button class="gearBtn" id="gearBtn" aria-label="Abrir ajustes" title="Ajustes">⚙️</button>
+    <button class="gearBtn focusLess" id="focusLessBtn" type="button" aria-label="Ocultar menus e voltar à tela de foco" title="Ocultar menus" aria-expanded="true">✕</button>
+  </div>
+</header>
+
+<nav class="hide" id="tabs" aria-label="Navegação principal">
+  <button data-tab="timer" class="on">Cronômetro</button>
+  <button data-tab="stats">Estatísticas</button>
+  <button data-tab="tada">Ta-da</button>
+  <button data-tab="room">Sala<span class="badge hide" id="msgBadge"></span></button>
+</nav>
+
+<button type="button" id="focusMoreBtn" class="focusMore" aria-expanded="false" aria-controls="appHeader">⋯ Mais</button>
+
+<main class="hide" id="app" aria-label="Conteúdo principal">
+
+  <!-- TIMER -->
+  <section id="view-timer">
+    <div class="quickBar" role="group" aria-label="Conforto: tema e cores (mais opções em Ajustes → Aparência)">
+      <button id="qbTheme" type="button" aria-pressed="true" title="Alternar modo escuro">🌙 <span>Escuro</span></button>
+      <button id="qbPalette" type="button" title="Trocar a paleta de cores suaves">🎨 <span id="qbPaletteName">Cores</span></button>
+    </div>
+    <div class="breathCard hide" id="breathCard" role="group" aria-label="Pausa consciente: respiração guiada">
+      <div class="breathStage" aria-hidden="true"><div class="breathDot" id="breathDot"></div></div>
+      <p class="breathCue" id="breathCue" aria-hidden="true">Inspire…</p>
+      <p class="breathAsk" id="breathAsk"></p>
+      <p class="sr-only">Respiração guiada: inspire pelo nariz contando até 4 e solte o ar devagar contando até 6. Repita pelo tempo da pausa.</p>
+      <div class="breathBtns">
+        <button class="ghost" id="breathOther" type="button">Outra pergunta</button>
+        <button class="ghost" id="breathSkip" type="button">Dispensar</button>
+      </div>
+    </div>
+    <div class="subjectChips" id="subjectChips"></div>
+    <div class="modes">
+      <button data-mode="pomodoro" class="on">Ciclos com pausas</button>
+      <button data-mode="livre">Livre, sem limite</button>
+    </div>
+    <div class="dial">
+      <p class="focusInfo focusTask" id="focusTask" aria-live="polite"></p>
+      <p class="phase" id="phaseLabel" aria-live="off">Pronto para começar</p>
+      <div class="ring">
+        <div class="hgFill" id="hgFill" aria-hidden="true"><div class="hgWater"><svg class="hgWave" viewBox="0 0 400 16" preserveAspectRatio="none"><path d="M0 8 Q50 0 100 8 T200 8 T300 8 T400 8 V16 H0Z"/></svg></div></div>
+        <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+          <circle cx="50" cy="50" r="45" fill="none" stroke="var(--border)" stroke-width="3"/>
+          <circle id="progressRing" cx="50" cy="50" r="45" fill="none" stroke="var(--i-timer)" stroke-width="3"
+                  stroke-linecap="round" stroke-dasharray="282.74" stroke-dashoffset="282.74"/>
+        </svg>
+        <span class="time" id="clock" role="timer" aria-live="off" aria-label="Tempo do cronômetro">25:00</span>
+      </div>
+      <div class="controls">
+        <button class="round hide" id="skipBtn" title="Pular pausa" aria-label="Pular pausa">⏭</button>
+        <button class="ghost hide" id="breakBtn">☕ Fazer pausa</button>
+        <button class="primary roomtone hide" id="resumeBtn">▶ Retomar estudo</button>
+        <button class="primary" id="startBtn">▶ Iniciar</button>
+        <button class="ghost hide" id="pauseBtn">Pausar</button>
+        <button class="round hide" id="stopBtn" title="Parar e salvar">■</button>
+      </div>
+      <p class="focusInfo focusNext" id="focusNext" aria-live="polite"></p>
+      <div class="microRow">
+        <button class="microBtn" id="dumpBtn">💭 Anotar distração</button>
+        <button class="microBtn" id="readModeBtn" aria-label="Ativar modo leitura (tela quase apagada)">🌙 Modo leitura</button>
+        <button class="microBtn" id="miniPlayerBtn" aria-label="Abrir cronômetro compacto">🗔 Compacto</button>
+      </div>
+      <div class="dumpBox">
+        <button class="microBtn hide" id="dumpToggle">📝 Para fazer depois <span class="cnt" id="dumpCount">0</span></button>
+        <div class="hide" id="dumpList"></div>
+      </div>
+    </div>
+
+    <div class="microRow" style="margin-top:16px">
+      <button class="microBtn" id="soundSheetBtn">🔔 Som e notificações</button>
+    </div>
+
+    <div class="divider">
+      <button class="linkish" id="toggleCfg">ajustar duração do foco e das pausas</button>
+      <div class="grid2 hide" id="cfgBox">
+        <div><label class="f" for="cfgWork">Foco (min)</label><input class="f" type="number" min="1" max="600" id="cfgWork"></div>
+        <div><label class="f" for="cfgBreak">Pausa curta (min)</label><input class="f" type="number" min="1" max="120" id="cfgBreak"></div>
+        <div><label class="f" for="cfgLong">Pausa longa (min)</label><input class="f" type="number" min="1" max="120" id="cfgLong"></div>
+        <div><label class="f" for="cfgCycles">Ciclos até pausa longa</label><input class="f" type="number" min="1" max="12" id="cfgCycles"></div>
+        <button class="save span2" id="saveCfg">Salvar ajustes</button>
+      </div>
+    </div>
+
+    <!-- Mini-resumo do dia: espaço próprio, não mexe em nada do cronômetro acima -->
+    <div class="panelCard dayRecapCard" id="dayRecapCard">
+      <p class="sechead" style="margin:0 0 4px">seu dia até agora</p>
+      <p class="muted" id="dayRecapEmpty" style="margin:0 0 4px">Comece uma sessão pra ver o resumo aqui.</p>
+      <div id="dayRecapBody" class="hide">
+        <div class="dayRecapGrid">
+          <div class="dayRecapStat"><p class="v" id="dayRecapTotal">0 min</p><p class="l">estudado hoje</p></div>
+          <div class="dayRecapStat"><p class="v" id="dayRecapVsAvg">–</p><p class="l">vs. média (7d)</p></div>
+          <div class="dayRecapStat"><p class="v" id="dayRecapStreak">0</p><p class="l">dias seguidos 🔥</p></div>
+        </div>
+        <div class="dayRecapBars" id="dayRecapBars"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section id="view-stats" class="hide">
+    <div class="statsSubTabs" role="group" aria-label="Seções das estatísticas">
+      <button class="statsSubTab on" data-sub="resumo">Resumo</button>
+      <button class="statsSubTab" data-sub="diario">Diário<span class="long"> de estudos</span></button>
+      <button class="statsSubTab" data-sub="horarios">Horários</button>
+      <button class="statsSubTab" data-sub="aprofundado">Aprofundado</button>
+    </div>
+
+    <div id="statsSummary">
+      <div class="gCard streakCard t-gold">
+        <span class="gIco" data-ico="flame"></span>
+        <span class="big" id="streakBig">0</span>
+        <div class="txt"><p id="streakLine">dias seguidos estudando</p><p class="sub" id="streakSub"></p></div>
+      </div>
+
+      <section class="gCard consCard t-green" id="consistencyPanel" aria-labelledby="consTitle"></section>
+
+      <div class="wrappedRow"><button id="wrappedBtn">✨ Compartilhar resumo do mês</button></div>
+
+      <div class="stats">
+        <div class="stat gCard t-cyan"><div class="gTop"><span class="gIco" data-ico="clock"></span><p class="l">hoje</p></div><p class="v" id="stToday">0 min</p></div>
+        <div class="stat gCard t-green"><div class="gTop"><span class="gIco" data-ico="bars"></span><p class="l">esta semana</p></div><p class="v" id="stWeek">0 min</p></div>
+        <div class="stat gCard t-gold"><div class="gTop"><span class="gIco" data-ico="calendar"></span><p class="l">este mês</p></div><p class="v" id="stMonth">0 min</p></div>
+        <div class="stat gCard t-violet"><div class="gTop"><span class="gIco" data-ico="trophy"></span><p class="l">este ano</p></div><p class="v" id="stYear">0 min</p></div>
+      </div>
+
+      <section class="gCard t-blue" aria-labelledby="barsTitle">
+        <div class="gHead"><span class="gIco" data-ico="bars"></span><div><h3 class="gTitle" id="barsTitle">Últimos 7 dias</h3><p class="gSub">por matéria · toque numa coluna</p></div></div>
+        <div class="bars" id="bars"></div>
+        <div class="legend" id="legend"></div>
+        <p class="gReadout" id="barsReadout" aria-live="polite"></p>
+        <p class="muted" id="statsEmpty"></p>
+      </section>
+
+      <section class="gCard t-orange insightBox" aria-labelledby="insTitle">
+        <div class="gHead"><span class="gIco" data-ico="sun"></span><div><h3 class="gTitle" id="insTitle">Horários mais produtivos</h3><p class="gSub">por período do dia</p></div></div>
+        <div id="insightBars"></div>
+        <p class="insightSuggestion" id="insightSuggestion"></p>
+      </section>
+
+      <section class="gCard t-violet" aria-labelledby="catTitle">
+        <div class="gHead"><span class="gIco" data-ico="calendar"></span><div><h3 class="gTitle" id="catTitle">Catálogo semanal</h3><p class="gSub">toque numa semana para analisar</p></div></div>
+        <div class="yearNav"><button id="yearPrev" aria-label="Ano anterior">‹</button><span class="y" id="yearLabel">2026</span><button id="yearNext" aria-label="Próximo ano">›</button></div>
+        <div id="weekList"></div>
+      </section>
+    </div>
+
+    <div id="statsHistory" class="hide">
+      <section class="gCard t-cyan gLong" aria-labelledby="logTitle">
+        <div class="gHead"><span class="gIco" data-ico="list"></span><div><h3 class="gTitle" id="logTitle">Diário de estudos</h3><p class="gSub">o que você estudou em cada ciclo</p></div></div>
+        <div id="historyFilterBox"></div>
+        <div id="historyList"></div>
+      </section>
+    </div>
+
+    <div id="statsHours" class="hide"></div>
+
+    <div id="statsDeep" class="hide">
+      <p class="gLabel">Recordes pessoais</p>
+      <div class="recordGrid" id="recordCards"></div>
+
+      <section class="gCard t-green" aria-labelledby="freqTitle">
+        <div class="gHead"><span class="gIco" data-ico="grid"></span><div><h3 class="gTitle" id="freqTitle">Frequência no último ano</h3><p class="gSub">cada quadradinho é um dia</p></div></div>
+        <div class="heatmapWrap">
+          <div class="heatmapMonths" id="heatmapMonths"></div>
+          <div class="heatmap" id="heatmap"></div>
+        </div>
+        <div class="hmScale"><span>menos</span><i data-lv="0"></i><i data-lv="1"></i><i data-lv="2"></i><i data-lv="3"></i><i data-lv="4"></i><span>mais</span></div>
+      </section>
+
+      <section class="gCard t-blue" aria-labelledby="evoTitle">
+        <div class="gHead"><span class="gIco" data-ico="growth"></span><div><h3 class="gTitle" id="evoTitle">Evolução por matéria</h3><p class="gSub">mês a mês</p></div></div>
+        <div class="bars" id="monthlyBars"></div>
+        <div class="legend" id="monthlyLegend"></div>
+        <p class="muted" id="monthlyEmpty"></p>
+      </section>
+
+      <section class="gCard t-gold insightBox" aria-labelledby="wdTitle">
+        <div class="gHead"><span class="gIco" data-ico="medal"></span><div><h3 class="gTitle" id="wdTitle">Seu melhor dia da semana</h3><p class="gSub">quando você mais estuda</p></div></div>
+        <div id="weekdayBars"></div>
+        <p class="insightSuggestion" id="weekdaySuggestion"></p>
+      </section>
+
+      <section class="gCard t-rose" aria-labelledby="roomTitle">
+        <div class="gHead"><span class="gIco" data-ico="users"></span><div><h3 class="gTitle" id="roomTitle">Comparação com a sala</h3><p class="gSub">esta semana</p></div></div>
+        <div id="roomCompareBox"></div>
+      </section>
+    </div>
+  </section>
+
+  <!-- TA-DA (done-list + gratidão + amigos) -->
+  <section id="view-tada" class="hide">
+    <div class="tdTop">
+      <div class="tdSubTabs" role="group" aria-label="Partes do Ta-da">
+        <button class="tdSubTab on" data-tsub="done" type="button">✨ Done-list</button>
+        <button class="tdSubTab" data-tsub="grat" type="button">🙏 Gratidão</button>
+        <button class="tdSubTab" data-tsub="hist" type="button">📊 Histórico</button>
+        <button class="tdSubTab" data-tsub="friends" type="button">👥 Amigos</button>
+      </div>
+    </div>
+
+    <div id="tdDone">
+      <div class="dayStrip" id="tdDays" aria-label="Escolher o dia"></div>
+      <div class="dayHead" id="tdHead"></div>
+      <div class="tdStyles" id="tdStyles" role="group" aria-label="Estilo da done-list"></div>
+      <p class="tdStyleHint" id="tdStyleHint"></p>
+      <div id="tdBody"></div>
+    </div>
+
+    <div id="tdGrat" class="hide">
+      <p class="muted" style="margin:0 2px 14px">Pelo que você é grato — e como isso toca a sua vida. Escreva quando quiser durante o dia; depois de estudar o app também pergunta.</p>
+      <div id="tdGratComposer"></div>
+      <div id="tdGratList"></div>
+    </div>
+
+    <div id="tdHist" class="hide">
+      <div id="tdHistBody"></div>
+    </div>
+
+    <div id="tdFriends" class="hide">
+      <div class="tdFriendsBar">
+        <p class="muted" style="margin:0">O que cada pessoa da sala liberou para você ver hoje.</p>
+        <button class="linkish" id="tdFriendsRefresh" type="button">Atualizar</button>
+      </div>
+      <div id="tdFriendsList"></div>
+      <button class="linkish" id="tdFriendsSettings" type="button" style="margin-top:6px">Escolher quem vê a minha →</button>
+    </div>
+  </section>
+
+  <!-- ROOM -->
+  <section id="view-room" class="hide">
+    <div id="noRoom">
+      <h2 style="font-family:var(--head);font-size:18px;font-weight:400;margin:0 0 6px">Estude com alguém</h2>
+      <p class="muted" style="margin:0 0 28px">Crie uma sala e envie o código para sua família ou pessoas amigas, ou entre numa sala que já existe. Todos veem quem está online, quem está estudando agora, qual matéria, e quanto cada um estudou na semana — e podem começar um ciclo juntos, sincronizado.</p>
+      <button class="rowbtn" id="createRoom">Criar uma sala nova</button>
+      <div class="or"><i></i><span>ou</span><i></i></div>
+      <label class="f">Código da sala</label>
+      <div class="joinrow">
+        <input class="f" id="codeInput" placeholder="ABC123" maxlength="8" autocapitalize="characters" autocomplete="off" aria-label="Código da sala">
+        <button id="joinRoom">Entrar</button>
+      </div>
+      <p class="danger hide" id="roomErr" style="margin-top:10px"></p>
+    </div>
+
+    <div id="inRoom" class="hide">
+      <div class="roomSwitcher hide" id="roomSwitcher"></div>
+      <div class="roomtop"><h2>Sua sala</h2><button class="linkish" id="leaveRoom">sair desta sala</button></div>
+      <div class="code">código: <b id="roomCode"></b><button id="copyCode" title="Copiar">⧉</button></div>
+      <div class="joinMoreRow">
+        <button class="linkish" id="joinMoreToggle" type="button">+ entrar em outra sala</button>
+        <div class="joinrow hide" id="joinMoreBox">
+          <input class="f" id="joinMoreInput" placeholder="ABC123" maxlength="8" autocapitalize="characters" autocomplete="off" aria-label="Código da sala para entrar">
+          <button id="joinMoreGo">Entrar</button>
+        </div>
+        <p class="danger hide" id="joinMoreErr" style="margin-top:8px"></p>
+      </div>
+
+      <div class="syncPanel" id="syncPanel"></div>
+
+      <p class="sechead">ranking semanal da sala</p>
+      <div id="members"></div>
+
+      <p class="sechead" style="margin-top:30px">mensagens</p>
+      <div class="msgList" id="msgList" role="region" aria-label="Mensagens da sala" tabindex="0"></div>
+      <div class="msgTo hide" id="msgTo"></div>
+      <div class="quickmsgs" id="quickMsgs"></div>
+      <div class="composer">
+        <textarea class="f" id="msgInput" maxlength="240" placeholder="Escreva para a sala…" aria-label="Escrever mensagem para a sala"></textarea>
+        <button id="sendMsg" title="Enviar" aria-label="Enviar mensagem">➤</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- SETTINGS -->
+  <!-- FRASES -->
+  <section id="view-quotes" class="hide">
+    <h2 style="font-family:var(--head);font-size:18px;font-weight:400;margin:0 0 18px">Inspiração</h2>
+    <div id="quotesRoot"></div>
+  </section>
+
+  <section id="view-settings" class="hide">
+    <div class="settingsTop">
+      <button class="backBtn" id="settingsBack" aria-label="Voltar para a tela anterior">‹ Voltar</button>
+      <h2>Ajustes</h2>
+    </div>
+
+    <label class="f">Nome que aparece na sala</label>
+    <input class="f" id="setName" style="margin-bottom:20px" aria-label="Seu nome">
+    <label class="f">Cor</label>
+    <div class="swatches" id="swatches"></div>
+    <button class="save settingsSave" style="width:auto;padding:10px 20px" id="saveProfile">Salvar perfil</button>
+
+    <div class="divider" style="margin-top:34px">
+      <p class="sechead">Experiência</p>
+      <p class="sechead" style="margin-top:6px;font-size:12px">Visual</p>
+      <div class="uxLayouts" role="group" aria-label="Visual do app">
+        <button class="uxLayout on" data-layout="atual" aria-pressed="true">Atual</button>
+        <button class="uxLayout" data-layout="celular" aria-pressed="false">📱 Celular</button>
+        <button class="uxLayout" data-layout="tablet" aria-pressed="false">▭ Tablet</button>
+        <button class="uxLayout" data-layout="computador" aria-pressed="false">💻 Computador</button>
+      </div>
+      <p class="muted" style="margin:10px 0 0">Celular: coluna estreita e botões maiores. Tablet: colunas um pouco mais largas. Computador: tela larga. Atual: como sempre foi. Vale só para este aparelho.</p>
+
+      <div class="notifBox" style="margin-top:18px">
+        <label class="switch"><input type="checkbox" id="uxFocus" aria-label="Tela de foco minimalista"><span class="slider"></span></label>
+        <div>
+          <p style="margin:0 0 2px;font-size:13px">Tela de foco minimalista</p>
+          <p class="fineprint" style="margin:0">Mostra só a tarefa atual, o cronômetro e o próximo passo. Os menus ficam no botão "⋯ Mais", no canto de cima. Ligada por padrão.</p>
+        </div>
+      </div>
+      <div class="notifBox">
+        <label class="switch"><input type="checkbox" id="uxHourglass" aria-label="Ampulheta fluida no cronômetro"><span class="slider"></span></label>
+        <div>
+          <p style="margin:0 0 2px;font-size:13px">Ampulheta fluida no cronômetro</p>
+          <p class="fineprint" style="margin:0">Em vez de números piscando, a água sobe enquanto o tempo passa. Desligada por padrão.</p>
+        </div>
+      </div>
+      <div class="notifBox">
+        <label class="switch"><input type="checkbox" id="uxSoft" aria-label="Conclusão suave"><span class="slider"></span></label>
+        <div>
+          <p style="margin:0 0 2px;font-size:13px">Conclusão suave</p>
+          <p class="fineprint" style="margin:0">Ao terminar um ciclo: uma luz quente e um tom calmo, sem confete nem sons agudos.</p>
+        </div>
+      </div>
+      <div class="notifBox">
+        <label class="switch"><input type="checkbox" id="uxCards" aria-label="Perguntas para lembrar ao concluir um ciclo"><span class="slider"></span></label>
+        <div>
+          <p style="margin:0 0 2px;font-size:13px">Perguntas para lembrar</p>
+          <p class="fineprint" style="margin:0">Ao concluir um ciclo de 5 min ou mais, o app pede 1 a 3 perguntas sobre o tema. Elas voltam nos dias seguintes em 📌 Revisão espaçada.</p>
+        </div>
+      </div>
+      <div class="notifBox">
+        <label class="switch"><input type="checkbox" id="uxGrat" aria-label="Gratidão depois de estudar"><span class="slider"></span></label>
+        <div>
+          <p style="margin:0 0 2px;font-size:13px">Gratidão depois de estudar</p>
+          <p class="fineprint" style="margin:0">Ao concluir um ciclo, o app pergunta pelo que você é grato e como isso afeta a sua vida. Vai para a aba Ta-da → Gratidão.</p>
+        </div>
+      </div>
+      <p class="muted" style="margin:12px 0 0">Sons da natureza (chuva, vento, ruído rosa e castanho) ficam no botão 🌿 no canto da tela.</p>
+    </div>
+
+    <div class="divider" style="margin-top:34px">
+      <p class="sechead">Aparência</p>
+      <div class="modes">
+        <button class="themeBtn" data-theme="light">☀️ Claro</button>
+        <button class="themeBtn on" data-theme="dark">🌙 Escuro</button>
+        <button class="themeBtn" data-theme="system">📱 Sistema</button>
+      </div>
+      <p class="sechead" style="margin-top:22px">Cores suaves</p>
+      <div class="modes palModes" id="palModes">
+        <button class="palBtn on" data-pal="padrao"><span class="palDot" style="background:linear-gradient(135deg,#2FD9EE,#A78BFA)"></span>Padrão</button>
+        <button class="palBtn" data-pal="bruma"><span class="palDot" style="background:#82C9D8"></span>Bruma</button>
+        <button class="palBtn" data-pal="musgo"><span class="palDot" style="background:#95D0A9"></span>Musgo</button>
+        <button class="palBtn" data-pal="areia"><span class="palDot" style="background:#E4BE7C"></span>Areia</button>
+        <button class="palBtn" data-pal="lavanda"><span class="palDot" style="background:#B9A9E2"></span>Lavanda</button>
+      </div>
+      <p class="muted" style="margin:-10px 0 0">Fundos e cores mais calmos para cansar menos a vista (a Areia é mais quente, boa à noite). Vale só para este aparelho.</p>
+      <div class="notifBox" style="margin-top:22px">
+        <label class="switch"><input type="checkbox" id="hcToggle" aria-label="Alto contraste"><span class="slider"></span></label>
+        <div><p style="margin:0 0 2px;font-size:13px">Alto contraste</p>
+          <p class="fineprint" style="margin:0">Fundo sólido, texto e bordas bem marcados, sem transparências. Se você não escolher, o app segue a configuração do seu aparelho. Vale só para este aparelho.</p></div>
+      </div>
+      <p class="sechead" style="margin-top:22px">Tamanho do texto</p>
+      <div class="modes" id="textSizeModes">
+        <button id="tsDown" type="button" aria-label="Diminuir o texto">A−</button>
+        <button id="tsReset" type="button" aria-label="Voltar ao tamanho normal do texto">Normal</button>
+        <button id="tsUp" type="button" aria-label="Aumentar o texto">A+</button>
+      </div>
+      <p class="sechead" style="margin-top:22px">Animações</p>
+      <div class="modes" id="fxModes">
+        <button class="fxBtn on" data-fx="full">✨ Cinema</button>
+        <button class="fxBtn" data-fx="lite">🍃 Suave</button>
+        <button class="fxBtn" data-fx="off">⏸ Nenhuma</button>
+      </div>
+      <p class="muted" style="margin:10px 0 0">Cinema: fundo que se move, telas que entram em cascata, ondas e confete nos toques. Suave: só transições simples, poupa a bateria. Nenhuma: tudo parado. Vale só para este aparelho.</p>
+    </div>
+
+    <div class="divider" style="margin-top:34px">
+      <p class="sechead">Pausas conscientes</p>
+      <div class="notifBox">
+        <label class="switch"><input type="checkbox" id="breathToggle" aria-label="Ativar pausas conscientes com respiração guiada"><span class="slider"></span></label>
+        <div>
+          <p style="margin:0 0 2px;font-size:13px">Respiração guiada durante as pausas</p>
+          <p class="fineprint" style="margin:0">Desligada por padrão. Quando ligada, nas pausas do cronômetro aparece um círculo que guia a respiração (inspire 4 s, solte 6 s) e uma pergunta curta sobre o seu propósito. Você pode dispensar a qualquer momento. Sem animações ligadas, o círculo fica parado e só o texto guia. Vale só para este aparelho.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider" style="margin-top:34px">
+      <p class="sechead">Papel de parede</p>
+      <p class="muted" style="margin:0">Escolha uma foto da sua galeria para o fundo do app. Ela fica só na sua conta, e o texto se adapta automaticamente à cor da imagem.</p>
+      <div class="wallRow">
+        <div class="wallPreview" id="wallPreview"></div>
+        <input type="file" accept="image/*" id="wallInput" class="hide" aria-label="Escolher imagem de papel de parede">
+        <button class="btnOutline" id="wallPick">Escolher foto</button>
+        <button class="btnOutline hide" id="wallClear">Remover</button>
+      </div>
+      <div class="wallRow" style="margin-top:14px">
+        <label class="f" style="margin:0">Clarear o fundo</label>
+        <input type="range" id="wallShadeRange" min="0" max="90" value="55" style="flex:1;min-width:140px" aria-label="Clareamento do papel de parede">
+      </div>
+    </div>
+
+    <div class="divider" style="margin-top:30px">
+      <p class="sechead">Matérias</p>
+      <p class="muted" style="margin:0 0 12px">Cada matéria ganha uma cor própria no gráfico e aparece para a sua sala enquanto você estuda.</p>
+      <div class="subjlist" id="subjList"></div>
+      <div class="addSubj"><input class="f" id="subjName" placeholder="Nova matéria (ex: Matemática)" aria-label="Nome da nova matéria"><button class="go" id="addSubj">Adicionar</button></div>
+      <div class="swatches" id="subjSwatches" style="margin-top:12px"></div>
+    </div>
+
+    <div class="divider" style="margin-top:30px">
+      <p class="sechead">Mensagens rápidas</p>
+      <p class="muted" style="margin:0 0 12px">Atalhos que aparecem acima do campo de mensagem na Sala.</p>
+      <div class="subjlist" id="quickList"></div>
+      <div class="addSubj"><input class="f" id="quickText" placeholder="Ex: Bora estudar! 📚" maxlength="60" aria-label="Texto da nova mensagem rápida"><button class="go" id="addQuick">Adicionar</button></div>
+    </div>
+
+    <div class="divider" style="margin-top:30px">
+      <p class="sechead">Som e notificações</p>
+      <button class="rowBtn" id="soundSheetBtn2">
+        <span class="ic">🔔</span>
+        <span class="tx"><b>Som e notificações</b><span>Ligue ou desligue o som e os avisos</span></span>
+        <span class="chev">›</span>
+      </button>
+    </div>
+
+    <div class="divider" style="margin-top:30px">
+      <p class="sechead">Diário de estudos — quem pode ver o meu</p>
+      <p class="muted" style="margin:0 0 12px">Por padrão seu diário é só seu. Libere aqui, pessoa por pessoa, quem da sua sala pode abrir o seu perfil e ver suas anotações.</p>
+      <div id="diaryShareList"></div>
+    </div>
+
+    <div class="divider" style="margin-top:30px">
+      <p class="sechead">Done-list — quem pode ver a minha</p>
+      <p class="muted" style="margin:0 0 12px">Por padrão o que você registra é só seu. Libere aqui, pessoa por pessoa, quem da sua sala vê suas conquistas do dia (e o seu estudo) na aba Ta-da → Amigos e no seu perfil.</p>
+      <div id="tadaShareList"></div>
+    </div>
+
+    <div class="divider" style="margin-top:30px">
+      <p class="sechead">Diário de gratidão — quem pode ver o meu</p>
+      <p class="muted" style="margin:0 0 12px">A gratidão é mais pessoal, por isso tem uma liberação à parte. Só quem você marcar aqui lê as suas gratidões, no seu perfil.</p>
+      <div id="gratShareList"></div>
+    </div>
+
+    <div class="divider" style="margin-top:30px">
+      <p class="sechead">Conta</p>
+      <p class="muted" id="accountLine" style="margin:0 0 14px"></p>
+      <button class="linkish" id="signOut">Sair da conta</button>
+      <p class="muted" style="margin:18px 0 10px">Seus dados são seus: você pode levar uma cópia ou apagar tudo a qualquer momento.</p>
+      <button class="btnOutline" id="exportMyData">⬇️ Baixar meus dados</button>
+      <button class="btnOutline" id="importMyData" style="margin-top:10px">⬆️ Importar dados de um arquivo</button>
+      <input type="file" id="importFile" class="hide" accept="application/json,.json" aria-label="Escolher arquivo de dados do Juntos (.json)">
+      <p class="fineprint" style="margin-top:8px">O arquivo precisa ter sido baixado aqui no Juntos. Antes de importar, você verá um resumo e pode cancelar. Nada é apagado: só entra o que ainda não existe na sua conta.</p>
+      <button class="btnOutline" id="deleteAccount" style="margin-top:10px;color:var(--danger);border-color:var(--danger)">🗑 Excluir minha conta e meus dados</button>
+      <p class="fineprint"><a href="termos.html" target="_blank" rel="noopener noreferrer">Termos de Serviço</a> · <a href="privacidade.html" target="_blank" rel="noopener noreferrer">Política de Privacidade</a></p>
+    </div>
+    <div class="divider" style="margin-top:30px">
+      <p class="sechead">Remover ciclos</p>
+      <p class="muted" style="margin:0 0 14px">Contou um ciclo por engano? Escolha quais remover: eles saem do Diário e o tempo é descontado dos seus totais.</p>
+      <button class="btnOutline" id="removeCycles">🗑 Remover ciclos de estudo</button>
+    </div>
+    <div class="divider" style="margin-top:30px">
+      <p class="sechead">Corrigir histórico</p>
+      <p class="muted" style="margin:0 0 14px">Ciclos que passaram da meia-noite eram somados inteiros no dia em que terminaram. Isto divide o tempo entre os dois dias nos seus totais.</p>
+      <button class="btnOutline" id="fixMidnight">🌙 Corrigir ciclos que passaram da meia-noite</button>
+    </div>
+    <div class="divider" style="margin-top:30px">
+      <p class="sechead">Sobre</p>
+      <button class="btnOutline" id="openWhatsNew">✨ Novidades desta e de versões anteriores<span id="settingsWhatsNewDot" class="hide"></span></button>
+    </div>
+    <p class="fineprint" id="versionTag" style="margin-top:20px"></p>
+  </section>
+</main>
+
+<div id="readOverlay" role="button" tabindex="0" aria-label="Sair do modo leitura"><span class="rc" id="readClock">25:00</span><p>toque para sair do modo leitura</p></div>
+
+<div class="toast" id="toast" aria-hidden="true"></div>
+<div class="msgPop" id="msgPop" role="group" aria-label="Nova mensagem">
+  <button class="close" id="msgPopClose" aria-label="Fechar aviso de mensagem">✕</button>
+  <p class="from" id="msgPopFrom"></p>
+  <p class="body" id="msgPopBody"></p>
+</div>
+
+<div class="friendWrap hide" id="friendWrap">
+  <div class="friendBox">
+    <button class="friendClose" id="friendClose">‹ voltar para a sala</button>
+    <div class="friendHead">
+      <span class="avatarWrap" id="friendAvatar"></span>
+      <div>
+        <p class="friendName" id="friendName"></p>
+        <p class="friendSeen" id="friendSeen"></p>
+      </div>
+    </div>
+    <div class="stats" id="friendStatsRow">
+      <div class="stat"><p class="v" id="frToday">0 min</p><p class="l">hoje</p></div>
+      <div class="stat"><p class="v" id="frWeek">0 min</p><p class="l">esta semana</p></div>
+      <div class="stat"><p class="v" id="frMonth">0 min</p><p class="l">este mês</p></div>
+      <div class="stat"><p class="v" id="frYear">0 min</p><p class="l">este ano</p></div>
+    </div>
+    <p class="sechead">últimos 7 dias, por matéria</p>
+    <div class="bars" id="friendBars"></div>
+    <div class="legend" id="friendLegend"></div>
+
+    <div id="friendTadaSection" class="hide">
+      <p class="sechead" style="margin-top:30px">done-list — hoje e dias recentes</p>
+      <div id="friendTadaList"></div>
+    </div>
+    <p class="muted" id="friendNoTada" style="margin-top:20px"></p>
+
+    <div id="friendGratSection" class="hide">
+      <p class="sechead" style="margin-top:30px">diário de gratidão</p>
+      <div id="friendGratList"></div>
+    </div>
+    <p class="muted" id="friendNoGrat" style="margin-top:20px"></p>
+
+    <div id="friendDiarySection" class="hide">
+      <p class="sechead" style="margin-top:30px">diário de estudos</p>
+      <div id="friendDiaryList"></div>
+    </div>
+    <p class="muted" id="friendNoDiary" style="margin-top:20px"></p>
+  </div>
+</div>
+
+<div class="modalWrap hide" id="soundSheet" role="dialog" aria-modal="true" aria-labelledby="soundSheetTitle">
+  <div class="modalBox soundSheetBox">
+    <p class="modalTitle" id="soundSheetTitle">🔔 Som e notificações</p>
+    <div class="notifBox">
+      <label class="switch"><input type="checkbox" id="soundToggle" checked><span class="slider"></span></label>
+      <div><p style="margin:0;font-size:13px">Tocar som ao concluir uma sessão</p></div>
+    </div>
+    <div class="notifBox" style="margin-top:10px">
+      <label class="switch"><input type="checkbox" id="notifToggle"><span class="slider"></span></label>
+      <div>
+        <p style="margin:0 0 2px;font-size:13px">Notificação com contagem regressiva + vibração</p>
+        <p class="fineprint" style="margin:0">Mostra o tempo restante na barra de notificações e vibra ao terminar, com o app minimizado. No iPhone, só funciona se o app foi adicionado à Tela de Início.</p>
+      </div>
+    </div>
+    <div class="notifBox" style="margin-top:10px">
+      <label class="switch"><input type="checkbox" id="msgNotifToggle" checked><span class="slider"></span></label>
+      <div><p style="margin:0;font-size:13px">Avisar quando alguém da sala mandar mensagem</p></div>
+    </div>
+    <div class="notifBox" style="margin-top:10px">
+      <label class="switch"><input type="checkbox" id="studyNotifToggle" checked><span class="slider"></span></label>
+      <div>
+        <p style="margin:0 0 2px;font-size:13px">Avisar quando alguém da sala começar a estudar</p>
+        <p class="fineprint" style="margin:0">Só funciona com o app aberto ou minimizado — se estiver totalmente fechado, o aviso não chega.</p>
+      </div>
+    </div>
+    <div class="notifBox remBlock" id="remBox" style="margin-top:10px">
+      <label class="switch"><input type="checkbox" id="remToggle" aria-label="Ativar lembrete gentil para estudar"><span class="slider"></span></label>
+      <div style="min-width:0;flex:1">
+        <p style="margin:0 0 2px;font-size:13px">Lembrete gentil para estudar</p>
+        <p class="fineprint" style="margin:0">Um convite, sem cobrança, nos horários que você escolher. Não avisa se você já estudou hoje nem durante um ciclo. Funciona com o app aberto ou minimizado; se o aparelho fechar o app, o lembrete não chega. Fica só neste aparelho.</p>
+        <div id="remDetails" class="hide" style="margin-top:10px">
+          <div id="remTimes" class="remTimes"></div>
+          <button type="button" class="ghost" id="remAdd" style="margin-top:6px">+ outro horário</button>
+          <p class="fineprint" style="margin:12px 0 6px">Dias da semana</p>
+          <div id="remDays" class="remDays" role="group" aria-label="Dias da semana do lembrete"></div>
+          <div id="pushBox" class="hide" style="margin-top:14px;display:block">
+            <div class="notifBox" style="display:flex;gap:10px;align-items:flex-start">
+              <label class="switch"><input type="checkbox" id="pushToggle" aria-label="Receber o lembrete mesmo com o app fechado"><span class="slider"></span></label>
+              <div style="min-width:0;flex:1">
+                <p style="margin:0 0 2px;font-size:13px">Receber mesmo com o app fechado</p>
+                <p class="fineprint" style="margin:0">Ao ativar, um identificador do seu aparelho (o endereço de notificação do navegador, sem seu nome nem e-mail) e os horários que você escolheu ficam guardados num servidor gratuito da Cloudflare, só para enviar o lembrete. Desligar, sair da conta ou excluí-la apaga isso. Veja a <a href="privacidade.html#s5" target="_blank" rel="noopener">Política de Privacidade</a>.</p>
+                <p class="fineprint hide" id="pushUnsupported" style="margin:6px 0 0">Este navegador não permite. No iPhone/iPad, instale o app na tela de início (Compartilhar → Adicionar à Tela de Início) e abra por lá.</p>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="ghost hide" id="remPerm" style="margin-top:12px">Também receber como notificação do sistema</button>
+        </div>
+      </div>
+    </div>
+    <div class="notifBox" style="margin-top:10px;display:block">
+      <p style="margin:0 0 2px;font-size:13px">🔕 Silenciar avisos</p>
+      <p class="fineprint" style="margin:0 0 8px" id="quietState" aria-live="polite">Os avisos estão ativos.</p>
+      <div class="remDays">
+        <button type="button" class="ghost" id="quietToday">Hoje</button>
+        <button type="button" class="ghost" id="quiet7">7 dias</button>
+        <button type="button" class="ghost hide" id="quietOff">Reativar</button>
+      </div>
+      <p class="fineprint" style="margin:8px 0 0">Vale para lembretes, mensagens e “fulano começou a estudar”. O aviso do cronômetro que você iniciou continua.</p>
+    </div>
+    <div class="modalBtns"><button class="save" id="soundSheetClose" style="width:auto;padding:10px 22px">Pronto</button></div>
+  </div>
+</div>
+
+<script type="module" src="main.js"></script>
+</body>
+</html>
