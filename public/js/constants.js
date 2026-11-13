@@ -1,4 +1,4 @@
-export const APP_VERSION = "2.26.0";
+export const APP_VERSION = "2.27.0";
 // versão dos Termos de Serviço e da Política de Privacidade que a pessoa aceitou (perfil.consent.v).
 // Mude este valor quando os documentos mudarem de forma relevante: todo mundo verá o aceite de novo.
 export const CONSENT_VERSION = "1.2";   // 1.2 (2.26): lembrete com o app fechado — endereço de push guardado no Worker da Cloudflare (opt-in)
