@@ -9,7 +9,7 @@ adicione em **Não lançado**, e quando for publicar de verdade, renomeie a seç
 versão e a data (veja `FLUXO-DE-TRABALHO.md` para o processo completo de lançamento).
 
 ## [Não lançado]
-### Lembrete com o app fechado (Worker gratuito) e menos gravações por ciclo (2.26.0)
+### Lembrete com o app fechado (Worker gratuito) e menos gravações por ciclo (2.27.0)
 **Em palavras simples:** (1) o lembrete de estudo pode chegar com o app fechado, usando um servidor gratuito da Cloudflare (opcional, desligado até você configurar); (2) cada ciclo grava menos no banco. **A Política subiu para 1.2: todos verão o aceite uma vez.** Nenhuma regra do Firestore mudou.
 **Ponto 2 — gravações (medido com o Firebase falso)**
 - Medido com o `firebase.js` REAL do app (só o SDK do Google é simulado; ver `tools/teste-navegador/sdk/`): um ciclo sem sala passou de **6 → 3 gravações** e com sala de **7 → 4**. Mudanças: o status da sala só grava com sala; `stopAndSave` não publica o status duas vezes (`pauseTimer({ skipPublish: true })`); a revisão espaçada sai do `scheduleReview` separado e vai no mesmo `updateDoc` do total (`spaced.js → reviewPatch`). **Atenção:** `reviewSchedule` fica em `users/{uid}/private/mind` (`PRIVATE_FIELDS`), então é uma gravação separada; a economia da revisão foi de 1 gravação, não zero. Os números acima são os corretos. Uma versão anterior deste changelog dizia 6 → 2, mas aquele número saiu de um simulador que não separava os campos privados e estava errado.
